@@ -12,7 +12,7 @@ class DatabaseConnection {
         mongoose.set('strictQuery', true);
         
         // Handle connection events
-        mongoose.connection.on('connected', () => {
+        mongoose.connection.on('connected', () => { // "=>" means callback 
             console.log('✅ MongoDB connected successfully');
             this.isConnected = true;
         });
@@ -102,9 +102,9 @@ class DatabaseConnection {
     }
 }
 
-// Create a singleton instance
+//Create a singleton instance
 const dbConnection = new DatabaseConnection();
 
-// Export the connect function and the instance
+//Export the connect function and the instance
 export default dbConnection.connect.bind(dbConnection);
 export const getDBStatus = dbConnection.getConnectionStatus.bind(dbConnection);
