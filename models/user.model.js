@@ -91,12 +91,12 @@ userSchema.methods.comparePassword = async function (enteredPassword) {
 
 // Generate password reset token
 userSchema.methods.getResetPasswordToken = function () {
-  const resetToken = crypto.randomBytes(20).toString("hex");
+  const resetToken = crypto.randomBytes(20).toString("hex");//crypto for generating random bytes
   this.resetPasswordToken = crypto
     .createHash("sha256")
     .update(resetToken)
     .digest("hex");
-  this.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
+  this.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutes(it is syntax for 10 mins)
   return resetToken;
 };
 
