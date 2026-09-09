@@ -14,7 +14,7 @@ export const isAuthenticated = catchAsync(async (req, res, next) => {
   }
 
   try {
-    // Verify token
+    // Verify the  token
     const decoded = await jwt.verify(token, process.env.JWT_SECRET);
 
     // Add user ID to request
