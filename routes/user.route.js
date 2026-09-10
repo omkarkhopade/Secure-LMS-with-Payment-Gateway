@@ -10,7 +10,7 @@ import {
 } from "../controllers/user.controller.js";
 import { isAuthenticated } from "../middleware/auth.middleware.js";
 import upload from "../utils/multer.js";
-import { validateSignup, validateSignin, validatePasswordChange } from "../middleware/validation.middleware.js";
+import { validateSignup, validateSignin, validatePasswordChange, validateProfile } from "../middleware/validation.middleware.js";
 
 const router = express.Router();
 
@@ -24,6 +24,7 @@ router.get("/profile", isAuthenticated, getCurrentUserProfile);
 router.patch("/profile", 
     isAuthenticated, 
     upload.single("avatar"), 
+    validateProfile,
     updateUserProfile
 );
 

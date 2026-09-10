@@ -1,3 +1,6 @@
+import mongoose from "mongoose";
+import { AppError } from "../middleware/error.middleware.js";
+import { validateCourse, validateLecture } from "../middleware/validation.middleware.js";
 import express from "express";
 import { isAuthenticated, restrictTo } from "../middleware/auth.middleware.js";
 import {
@@ -13,6 +16,10 @@ import {
 import upload from "../utils/multer.js";
 
 const router = express.Router();
+for (const field of ['courseId', 'lectureId']) router.param(field, (req, res, next, value) => {
+  if (!mongoose.isObjectIdOrHexString(value)) return next(new AppError('Invalid resource ID', 400));
+  next();
+});
 
 // Public routes
 router.get("/published", getPublishedCourses);
@@ -24,7 +31,7 @@ router.use(isAuthenticated);
 // Course management
 router
   .route("/")
-  .post(restrictTo("instructor"), upload.single("thumbnail"), createNewCourse)
+  .post(restrictTo("instructor"), upload.single("thumbnail"), validateCourse(), createNewCourse)
   .get(restrictTo("instructor"), getMyCreatedCourses);
 
 // Course details and updates
@@ -34,6 +41,7 @@ router
   .patch(
     restrictTo("instructor"),
     upload.single("thumbnail"),
+    validateCourse(true),
     updateCourseDetails
   );
 
@@ -41,6 +49,6 @@ router
 router
   .route("/c/:courseId/lectures")
   .get(getCourseLectures)
-  .post(restrictTo("instructor"), upload.single("video"), addLectureToCourse);
+  .post(restrictTo("instructor"), upload.single("video"), validateLecture, addLectureToCourse);
 
 export default router;

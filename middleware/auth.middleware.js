@@ -1,68 +1,20 @@
-import jwt from "jsonwebtoken";
-import { AppError } from "./error.middleware.js";
-import { catchAsync } from "./error.middleware.js";
-import { User } from "../models/user.model.js";
-
+import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
+import { AppError, catchAsync } from './error.middleware.js';
+import { User } from '../models/user.model.js';
 export const isAuthenticated = catchAsync(async (req, res, next) => {
-  // Check if token exists in cookies
-  const token = req.cookies.token;
-  if (!token) {
-    throw new AppError(
-      "You are not logged in. Please log in to get access.",
-      401
-    );
-  }
-
-  try {
-    // Verify the  token
-    const decoded = await jwt.verify(token, process.env.JWT_SECRET);
-
-    // Add user ID to request
-    req.id = decoded.userId;
-    const user = await User.findById(req.id);
-    if (!user) {
-      throw new AppError("User not found", 404);
-    }
-
-    req.user = user;
-
-    next();
-  } catch (error) {
-    if (error.name === "JsonWebTokenError") {
-      throw new AppError("Invalid token. Please log in again.", 401);
-    }
-    if (error.name === "TokenExpiredError") {
-      throw new AppError("Your token has expired. Please log in again.", 401);
-    }
-    throw error;
-  }
+  const token = req.cookies?.token;
+  if (!token) throw new AppError('Please sign in', 401);
+  let decoded;
+  try { decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] }); }
+  catch { throw new AppError('Invalid or expired session', 401); }
+  if (!mongoose.isObjectIdOrHexString(decoded.userId)) throw new AppError('Invalid session', 401);
+  const user = await User.findById(decoded.userId);
+  if (!user || (decoded.tokenVersion || 0) !== (user.tokenVersion || 0)) throw new AppError('Session is no longer valid', 401);
+  req.id = String(user._id); req.user = user;
+  next();
 });
-
-// Middleware for role-based access control
-export const restrictTo = (...roles) => {
-  return catchAsync(async (req, res, next) => {
-    // roles is an array ['admin', 'instructor']
-    if (!roles.includes(req.user.role)) {
-      throw new AppError(
-        "You do not have permission to perform this action",
-        403
-      );
-    }
-    next();
-  });
+export const restrictTo = (...roles) => (req, res, next) => {
+  if (!req.user || !roles.includes(req.user.role)) return next(new AppError('You do not have permission to perform this action', 403));
+  next();
 };
-
-// Optional authentication middleware
-export const optionalAuth = catchAsync(async (req, res, next) => {
-  try {
-    const token = req.cookies.token;
-    if (token) {
-      const decoded = await jwt.verify(token, process.env.JWT_SECRET);
-      req.id = decoded.userId;
-    }
-    next();
-  } catch (error) {
-    // If token is invalid, just continue without authentication
-    next();
-  }
-});

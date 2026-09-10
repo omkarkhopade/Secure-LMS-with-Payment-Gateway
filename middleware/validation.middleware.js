@@ -26,7 +26,7 @@ export const commonValidations = {
         query('page')
             .optional()
             .isInt({ min: 1 })
-            .withMessage('Page must be a positive integer'),
+            .withMessage('Page must be  positive integer'),
         query('limit')
             .optional()
             .isInt({ min: 1, max: 100 })
@@ -41,12 +41,12 @@ export const commonValidations = {
     email: 
         body('email')
             .isEmail()
-            .normalizeEmail()
+            .bail().isString().trim().toLowerCase()
             .withMessage('Please provide a valid email'),
 
     password: 
         body('password')
-            .isLength({ min: 8 })
+            .isString().bail().isLength({ min: 8 }).custom(value => Buffer.byteLength(value, 'utf8') <= 72)
             .withMessage('Password must be at least 8 characters long')
             .matches(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*])/)
             .withMessage('Password must contain at least one number, one uppercase letter, one lowercase letter, and one special character'),
@@ -80,15 +80,18 @@ export const validateSignup = validate([
 export const validateSignin = validate([
     commonValidations.email,
     body('password')
+        .isString().bail().isLength({ max: 72 })
         .notEmpty()
         .withMessage('Password is required')
 ]);
 
 export const validatePasswordChange = validate([
     body('currentPassword')
+        .isString().bail().isLength({ max: 72 })
         .notEmpty()
         .withMessage('Current password is required'),
     body('newPassword')
+        .isString().bail().isLength({ min: 8 }).custom(value => Buffer.byteLength(value, 'utf8') <= 72)
         .notEmpty()
         .withMessage('New password is required')
         .custom((value, { req }) => {
@@ -99,4 +102,25 @@ export const validatePasswordChange = validate([
         })
         .matches(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*])/)
         .withMessage('Password must contain at least one number, one uppercase letter, one lowercase letter, and one special character')
+]);
+
+export const validateProfile = validate([
+  body('name').optional().isString().bail().trim().isLength({ min: 2, max: 50 }),
+  body('email').optional().isString().bail().isEmail().trim().toLowerCase(),
+  body('bio').optional().isString().isLength({ max: 200 }),
+]);
+
+export const validateCourse = (partial = false) => validate([
+  body('title').optional(partial).isString().bail().trim().isLength({ min: 1, max: 100 }),
+  body('category').optional(partial).isString().bail().trim().isLength({ min: 1, max: 100 }),
+  body('price').optional(partial).isFloat({ min: 0, max: 10000000 }).custom(v => Number.isSafeInteger(Math.round(Number(v) * 100)) && Math.abs(Number(v) * 100 - Math.round(Number(v) * 100)) < 0.00001).toFloat(),
+  body('subtitle').optional().isString().isLength({ max: 200 }),
+  body('description').optional().isString().isLength({ max: 10000 }),
+  body('level').optional().isIn(['beginner', 'intermediate', 'advanced']),
+  body('isPublished').optional().isBoolean({ strict: false }).toBoolean(),
+]);
+export const validateLecture = validate([
+  body('title').isString().bail().trim().isLength({ min: 1, max: 100 }),
+  body('description').optional().isString().isLength({ max: 500 }),
+  body('isPreview').optional().isBoolean({ strict: false }).toBoolean(),
 ]);

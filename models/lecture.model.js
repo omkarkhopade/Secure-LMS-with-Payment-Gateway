@@ -12,6 +12,7 @@ const lectureSchema = new mongoose.Schema({
         trim: true,
         maxLength: [500, 'Lecture description cannot exceed 500 characters']
     },
+    videoFormat: { type: String, default: "mp4" },
     videoUrl: {
         type: String,
         required: [true, 'Video URL is required']

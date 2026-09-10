@@ -17,7 +17,7 @@ const userSchema = new mongoose.Schema(
       trim: true,
       lowercase: true,
       match: [
-        /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/,
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
         "Please provide a valid email",
       ],
     },
@@ -39,6 +39,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "default-avatar.png",
     },
+    avatarPublicId: String,
     bio: {
       type: String,
       maxLength: [200, "Bio cannot exceed 200 characters"],
@@ -61,8 +62,9 @@ const userSchema = new mongoose.Schema(
         ref: "Course",
       },
     ],
-    resetPasswordToken: String,
-    resetPasswordExpire: Date,
+    resetPasswordToken: { type: String, select: false },
+    tokenVersion: { type: Number, default: 0 },
+    resetPasswordExpire: { type: Date, select: false },
     lastActive: {
       type: Date,
       default: Date.now,
@@ -70,7 +72,7 @@ const userSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-    toJSON: { virtuals: true },
+    toJSON: { virtuals: true, transform(doc, ret) { delete ret.password; delete ret.resetPasswordToken; delete ret.resetPasswordExpire; delete ret.tokenVersion; return ret; } },
     toObject: { virtuals: true },
   }
 );

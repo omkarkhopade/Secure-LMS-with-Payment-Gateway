@@ -32,12 +32,15 @@ const courseSchema = new mongoose.Schema({
     price:{
         type:Number,
         required:[true, 'Course price is required'],
-        min:[0, 'Course price must be non-negative']
+        min:[0, 'Course price must be non-negative'],
+        max:10000000,
+        validate: { validator: v => Number.isFinite(v) && Math.abs(v * 100 - Math.round(v * 100)) < 0.00001, message: 'Price must have at most two decimal places' }
     },
     thumbnail:{
         type:String,
         required:[true, 'Course thumbnail is required']
     },
+    thumbnailPublicId: String,
     enrolledStudents:[
         {
             type:mongoose.Schema.Types.ObjectId,
@@ -72,6 +75,9 @@ const courseSchema = new mongoose.Schema({
     toJSON:{virtuals:true},
     toObject:{virtuals:true}
 });
+
+courseSchema.index({ isPublished: 1, createdAt: -1 });
+courseSchema.index({ instructor: 1, createdAt: -1 });
 
 // Virtual field for average rating (to be implemented with reviews)
 courseSchema.virtual('averageRating').get(function(){

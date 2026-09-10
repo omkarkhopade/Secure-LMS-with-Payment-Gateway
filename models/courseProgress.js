@@ -52,15 +52,7 @@ const courseProgressSchema = new mongoose.Schema({
     toObject: { virtuals: true }
 });
 
-// Calculate completion percentage before saving
-courseProgressSchema.pre('save', async function(next) {
-    if (this.lectureProgress.length > 0) {
-        const completedLectures = this.lectureProgress.filter(lp => lp.isCompleted).length;
-        this.completionPercentage = Math.round((completedLectures / this.lectureProgress.length) * 100);
-        this.isCompleted = this.completionPercentage === 100;
-    }
-    next();
-});
+courseProgressSchema.index({ user: 1, course: 1 }, { unique: true });
 
 // Update last accessed
 courseProgressSchema.methods.updateLastAccessed = function() {

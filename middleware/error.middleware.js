@@ -1,73 +1,16 @@
-// Custom error class
 export class AppError extends Error {
-    constructor(message, statusCode) {
-        super(message);
-        this.statusCode = statusCode;
-        this.status = `${statusCode}`.startsWith('4') ? 'fail' : 'error';
-        this.isOperational = true;
-
-        Error.captureStackTrace(this, this.constructor);
-    }
+  constructor(message, statusCode, details) { super(message); this.statusCode = statusCode; this.isOperational = true; this.details = details; }
 }
-
-// Error handler for async functions
-export const catchAsync = (fn) => {
-    return (req, res, next) => {
-        fn(req, res, next).catch(next);
-    };
-};
-
-// Global error handling middleware
-export const errorHandler = (err, req, res, next) => {
-    err.statusCode = err.statusCode || 500;
-    err.status = err.status || 'error';
-
-    if (process.env.NODE_ENV === 'development') {
-        // Development error response
-        res.status(err.statusCode).json({
-            status: err.status,
-            error: err,
-            message: err.message,
-            stack: err.stack
-        });
-    } else {
-        // Production error response
-        if (err.isOperational) {
-            // Operational, trusted error: send message to client
-            res.status(err.statusCode).json({
-                status: err.status,
-                message: err.message
-            });
-        } else {
-            // Programming or other unknown error: don't leak error details
-            console.error('ERROR 💥', err);
-            res.status(500).json({
-                status: 'error',
-                message: 'Something went wrong!'
-            });
-        }
-    }
-};
-
-// Handle specific MongoDB errors
-export const handleMongoError = (err) => {
-    if (err.name === 'CastError') {
-        return new AppError(`Invalid ${err.path}: ${err.value}`, 400);
-    }
-    if (err.code === 11000) {
-        const value = err.errmsg.match(/(["'])(\\?.)*?\1/)[0];
-        return new AppError(`Duplicate field value: ${value}. Please use another value!`, 400);
-    }
-    if (err.name === 'ValidationError') {
-        const errors = Object.values(err.errors).map(el => el.message);
-        return new AppError(`Invalid input data. ${errors.join('. ')}`, 400);
-    }
-    return err;
-};
-
-// Handle JWT errors
-export const handleJWTError = () => 
-    new AppError('Invalid token. Please log in again!', 401);
-
-export const handleJWTExpiredError = () => 
-    new AppError('Your token has expired! Please log in again.', 401);
+export const catchAsync = (fn) => (req, res, next) => Promise.resolve().then(() => fn(req, res, next)).catch(next);
+export function errorHandler(err, req, res, next) {
+  if (res.headersSent) return next(err);
+  let status = err.isOperational ? err.statusCode : 500;
+  let message = err.isOperational ? err.message : 'Internal server error';
+  if (err.code === 11000) { status = 409; message = 'A record with these details already exists'; }
+  if (['CastError', 'ValidationError'].includes(err.name)) { status = 400; message = 'Invalid input data'; }
+  if (err.type === 'entity.parse.failed') { status = 400; message = 'Invalid JSON body'; }
+  if (err.type === 'entity.too.large' || err.code === 'LIMIT_FILE_SIZE') { status = 413; message = 'Request is too large'; }
+  if (err.name === 'MulterError' && status === 500) { status = 400; message = 'Invalid file upload'; }
+  if (status >= 500) console.error(JSON.stringify({ event: 'request_error', method: req.method, path: req.path, name: err.name }));
+  res.status(status).json({ success: false, message, ...(err.details && { errors: err.details }) });
+}

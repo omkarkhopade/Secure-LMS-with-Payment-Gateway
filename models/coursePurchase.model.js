@@ -20,7 +20,7 @@ const coursePurchaseSchema = new mongoose.Schema({
         type:String,
         required:[true, 'Currency is required'],
         uppercase:true,
-        default:'USD'
+        default:'INR'
     },
     status:{
         type:String,
@@ -58,6 +58,8 @@ const coursePurchaseSchema = new mongoose.Schema({
     toObject:{virtuals:true}
 });
 
+coursePurchaseSchema.index({ paymentMethod: 1, paymentId: 1 }, { unique: true });
+coursePurchaseSchema.index({ user: 1, course: 1, status: 1 }, { unique: true, partialFilterExpression: { status: 'pending' } });
 // Index for faster queries
 coursePurchaseSchema.index({user:1,course:1});
 coursePurchaseSchema.index({status:1});

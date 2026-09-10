@@ -1,3 +1,9 @@
 .env
 node_modules/
 uploads
+.env.*
+!.env.example
+test-uploads/
+*.log
+.DS_Store
+REVIEW.md

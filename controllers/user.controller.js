@@ -1,17 +1,16 @@
+import { Course } from "../models/course.model.js";
 import { User } from "../models/user.model.js";
-import bcrypt from "bcryptjs";
-import { generateToken } from "../utils/generateToken.js";
+import { generateToken, cookieOptions } from "../utils/generateToken.js";
 import { deleteMediaFromCloudinary, uploadMedia } from "../utils/cloudinary.js";
 import { catchAsync } from "../middleware/error.middleware.js";
 import { AppError } from "../middleware/error.middleware.js";
-import crypto from "crypto";
 
 /**
  * Create a new user account
  * @route POST /api/v1/users/signup
  */
 export const createUserAccount = catchAsync(async (req, res) => {
-  const { name, email, password, role = "student" } = req.body;
+  const { name, email, password } = req.body;
 
   // Check if user already exists
   const existingUser = await User.findOne({ email: email.toLowerCase() });
@@ -24,12 +23,12 @@ export const createUserAccount = catchAsync(async (req, res) => {
     name,
     email: email.toLowerCase(),
     password,
-    role,
+    role: "student",
   });
 
   // Update last active and generate token
   await user.updateLastActive();
-  generateToken(res, user._id, "Account created successfully");
+  generateToken(res, user, "Account created successfully");
 });
 
 /**
@@ -49,7 +48,7 @@ export const authenticateUser = catchAsync(async (req, res) => {
 
   // Update last active and generate token
   await user.updateLastActive();
-  generateToken(res, user._id, `Welcome back ${user.name}`);
+  generateToken(res, user, `Welcome back ${user.name}`);
 });
 
 /**
@@ -57,7 +56,7 @@ export const authenticateUser = catchAsync(async (req, res) => {
  * @route POST /api/v1/users/signout
  */
 export const signOutUser = catchAsync(async (_, res) => {
-  res.cookie("token", "", { maxAge: 0 });
+  res.clearCookie("token", cookieOptions());
   res.status(200).json({
     success: true,
     message: "Signed out successfully"
@@ -103,13 +102,10 @@ export const updateUserProfile = catchAsync(async (req, res) => {
   // Handle avatar upload if provided
   if (req.file) {
     const avatarResult = await uploadMedia(req.file.path);
-    updateData.avatar = avatarResult?.secure_url || req.file.path;
+    updateData.avatar = avatarResult.secure_url;
+    updateData.avatarPublicId = avatarResult.public_id;
 
-    // Delete old avatar if it's not the default
-    const user = await User.findById(req.id);
-    if (user.avatar && user.avatar !== "default-avatar.png") {
-      await deleteMediaFromCloudinary(user.avatar);
-    }
+
   }
 
   // Update user and get updated document
@@ -121,6 +117,8 @@ export const updateUserProfile = catchAsync(async (req, res) => {
   if (!updatedUser) {
     throw new AppError("User not found", 404);
   }
+
+  if (req.file && req.user.avatarPublicId) await deleteMediaFromCloudinary(req.user.avatarPublicId).catch(() => console.error("Old avatar cleanup failed"));
 
   res.status(200).json({
     success: true,
@@ -149,66 +147,10 @@ export const changeUserPassword = catchAsync(async (req, res) => {
 
   // Update password
   user.password = newPassword;
+  user.tokenVersion = (user.tokenVersion || 0) + 1;
   await user.save();
 
-  res.status(200).json({
-    success: true,
-    message: "Password changed successfully",
-  });
-});
-
-/**
- * Request password reset
- * @route POST /api/v1/users/forgot-password
- */
-export const forgotPassword = catchAsync(async (req, res) => {
-  const { email } = req.body;
-  const user = await User.findOne({ email: email.toLowerCase() });
-
-  if (!user) {
-    throw new AppError("No user found with this email", 404);
-  }
-
-  // Generate reset token
-  const resetToken = user.getResetPasswordToken();
-  await user.save({ validateBeforeSave: false });
-
-  // TODO: Send reset token via email
-
-  res.status(200).json({
-    success: true,
-    message: "Password reset instructions sent to email",
-  });
-});
-
-/**
- * Reset password
- * @route POST /api/v1/users/reset-password/:token
- */
-export const resetPassword = catchAsync(async (req, res) => {
-  const { token } = req.params;
-  const { password } = req.body;
-
-  // Get user by reset token
-  const user = await User.findOne({
-    resetPasswordToken: crypto.createHash("sha256").update(token).digest("hex"),
-    resetPasswordExpire: { $gt: Date.now() },
-  });
-
-  if (!user) {
-    throw new AppError("Invalid or expired reset token", 400);
-  }
-
-  // Update password and clear reset token
-  user.password = password;
-  user.resetPasswordToken = undefined;
-  user.resetPasswordExpire = undefined;
-  await user.save();
-
-  res.status(200).json({
-    success: true,
-    message: "Password reset successful",
-  });
+  generateToken(res, user, "Password changed successfully");
 });
 
 /**
@@ -217,16 +159,17 @@ export const resetPassword = catchAsync(async (req, res) => {
  */
 export const deleteUserAccount = catchAsync(async (req, res) => {
   const user = await User.findById(req.id);
+  if (await Course.exists({ instructor: req.id })) throw new AppError("Transfer or archive owned courses before deleting this account", 409);
 
   // Delete avatar if not default
   if (user.avatar && user.avatar !== "default-avatar.png") {
-    await deleteMediaFromCloudinary(user.avatar);
+    await deleteMediaFromCloudinary(user.avatarPublicId);
   }
 
   // Delete user
   await User.findByIdAndDelete(req.id);
 
-  res.cookie("token", "", { maxAge: 0 });
+  res.clearCookie("token", cookieOptions());
   res.status(200).json({
     success: true,
     message: "Account deleted successfully",
