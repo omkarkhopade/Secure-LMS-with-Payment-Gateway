@@ -61,6 +61,6 @@ export const getCoursePurchaseStatus = catchAsync(async (req, res) => {
 });
 export const getPurchasedCourses = catchAsync(async (req, res) => {
   const page = Number(req.query.page || 1), limit = Number(req.query.limit || 20);
-  const purchases = await CoursePurchase.find({ user: req.id, status: 'completed' }).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).populate({ path: 'course', select: 'title thumbnail description category instructor', populate: { path: 'instructor', select: 'name avatar' } });
+  const purchases = await CoursePurchase.find({ user: req.id, status: 'completed' }).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).populate({ path: 'course', select: 'title thumbnail description category instructor totalLectures totalDuration level', populate: { path: 'instructor', select: 'name avatar' } });
   res.json({ success: true, data: purchases.map(p => p.course).filter(Boolean) });
 });

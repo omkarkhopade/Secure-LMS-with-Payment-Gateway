@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import { AppError } from "../middleware/error.middleware.js";
 import { validateCourse, validateLecture } from "../middleware/validation.middleware.js";
 import express from "express";
-import { isAuthenticated, restrictTo } from "../middleware/auth.middleware.js";
+import { isAuthenticated, restrictTo, optionalAuth } from "../middleware/auth.middleware.js";
 import {
   createNewCourse,
   searchCourses,
@@ -24,6 +24,7 @@ for (const field of ['courseId', 'lectureId']) router.param(field, (req, res, ne
 // Public routes
 router.get("/published", getPublishedCourses);
 router.get("/search", searchCourses);
+router.get("/c/:courseId", optionalAuth, getCourseDetails);
 
 // Protected routes
 router.use(isAuthenticated);
@@ -37,7 +38,6 @@ router
 // Course details and updates
 router
   .route("/c/:courseId")
-  .get(getCourseDetails)
   .patch(
     restrictTo("instructor"),
     upload.single("thumbnail"),

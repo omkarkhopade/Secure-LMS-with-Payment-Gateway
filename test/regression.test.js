@@ -268,3 +268,15 @@ test('production startup verifies the required unique indexes', async () => {
     await CourseProgress.createIndexes();
   }
 });
+
+test('visitors can browse published details without receiving paid video URLs or drafts', async () => {
+  const result = await request(`/api/v1/course/c/${course._id}`);
+  assert.equal(result.status, 200);
+  assert.ok(result.body.data.lectures[0].videoUrl);
+  assert.equal(result.body.data.lectures[1].videoUrl, undefined);
+  assert.equal(result.body.data.lectures[1].publicId, undefined);
+  assert.equal(result.body.data.enrolledStudents, undefined);
+  const draft = await Course.findOne({ title: 'Draft' });
+  assert.equal((await request(`/api/v1/course/c/${draft._id}`)).status, 404);
+  assert.equal((await request(`/api/v1/course/c/${course._id}`, { method: 'PATCH', body: { title: 'Hacked' } })).status, 401);
+});

@@ -3,6 +3,7 @@ import { AppError } from '../middleware/error.middleware.js';
 import { videoDeliveryUrl } from '../utils/cloudinary.js';
 export const isOwner = (course, userId) => String(course.instructor?._id || course.instructor) === String(userId);
 export async function hasCourseAccess(course, userId) {
+  if (!userId) return false;
   return isOwner(course, userId) || Boolean(await CoursePurchase.exists({ course: course._id, user: userId, status: 'completed' }));
 }
 export async function courseView(course, userId, purchased) {
