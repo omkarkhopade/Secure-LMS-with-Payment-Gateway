@@ -20,7 +20,7 @@ export const createNewCourse = catchAsync(async (req, res) => {
     const result = await uploadMedia(req.file.path);
     thumbnail = result.secure_url;
     thumbnailPublicId = result.public_id;
-  } else {
+  } else{
     throw new AppError("Course thumbnail is required", 400);
   }
 
@@ -43,11 +43,13 @@ export const createNewCourse = catchAsync(async (req, res) => {
  */
 export const searchCourses = catchAsync(async (req, res) => {
   const {
+
     query = "",
     categories = [],
     level,
     priceRange,
     sortBy = "newest",
+    
   } = req.query;
 
   const escapedQuery = query.slice(0, 100).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
