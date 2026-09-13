@@ -1,0 +1,8 @@
+{
+  "ignore": [
+    "client/**",
+    "test/**",
+    "test-uploads/**",
+    "uploads/**"
+  ]
+}

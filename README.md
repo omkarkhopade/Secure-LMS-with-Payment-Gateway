@@ -1,6 +1,6 @@
-# LMS API
+# Forma LMS - frontend and backend
 
-Express/Mongoose backend for courses, student progress, Stripe Checkout and Razorpay. There is no frontend in this repository. `server-challenge` is the Git repository; the sibling `server-solution` contains the same hardened backend for reference. Deploy one copy.
+This repository contains the Express/Mongoose API and the React frontend in `client/`. Both are tracked by the same Git repository. The sibling `server-solution` is an optional reference outside this repository and is not required to clone, run, or deploy this project.
 
 ## Run locally
 
@@ -8,7 +8,7 @@ Use Node.js 22 or 24 and a MongoDB replica set (MongoDB Atlas also works). Trans
 
 ```powershell
 cd server-challenge
-npm.cmd ci
+npm.cmd run install:all
 Copy-Item env.example .env
 # Fill in .env using your own credentials.
 npm.cmd run db:indexes
@@ -20,6 +20,59 @@ On macOS/Linux, use `npm` and `cp env.example .env`. Preserve your existing `.en
 Generate a JWT secret with `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`. Never put credentials in version control or browser code. Use the `CLOUDINARY_*` environment names shown in `env.example`; the old `CLOUD_NAME`, `API_KEY`, and `API_SECRET` names still work for compatibility.
 
 `npm test` starts its own temporary MongoDB replica set and uses fake credentials and mocked payment HTTP calls. It does not connect to `MONGO_URI` from your `.env`. On its first run, the test runner downloads a MongoDB executable. Dependencies install with `npm ci --ignore-scripts` too; the MongoDB download happens when tests run.
+
+
+## Start the frontend
+
+Keep the API running in the first terminal. In a second terminal at the repository root (`server-challenge`), run:
+
+```powershell
+npm run dev:client
+```
+
+Open **http://localhost:5175**. The API runs on port 8000. The Vite proxy connects the two; use `CLIENT_URL=http://localhost:5175` in the backend `.env`. Do not run two frontend dev servers on the same port.
+
+```text
+server-challenge/          # Git repository root and backend
+  client/                 # React frontend, its lockfile and tests
+    src/
+    public/
+    package.json
+  controllers/
+  routes/
+  models/
+  test/
+  .github/workflows/ci.yml
+  env.example
+  package.json
+  package-lock.json
+```
+
+See [frontend architecture, screenshots, and deployment instructions](client/README.md).
+
+## Checks and GitHub
+
+Run these from the repository root:
+
+```powershell
+npm run check
+npm run test:e2e
+```
+
+`check` runs backend tests, frontend lint, frontend unit tests, and the frontend production build. The browser tests run isolated fixtures, not your database. GitHub Actions checks both packages and runs browser tests on Linux. `npm start` and the root Dockerfile run the API; build the frontend with `npm run build` and deploy `client/dist` with the API reverse proxy and SPA fallback described in the frontend guide. GitHub Pages alone cannot host the Express API.
+
+Both lockfiles and the placeholder environment examples belong in Git. `.env`, dependencies, uploads, build output, and test reports are ignored. Never force-add these ignored files. Before pushing, review:
+
+```powershell
+git status --short
+git add .
+git diff --cached --stat
+git diff --cached
+git commit -m "Include React frontend with LMS backend"
+git push
+```
+
+Use your existing remote and branch; inspect `git remote -v` and `git branch --show-current` if needed. Configure a remote first if this checkout has none. No commit or push is performed automatically by the setup commands.
 
 ## Authentication and instructors
 

@@ -7,3 +7,9 @@ test
 .git
 .DS_Store
 *.log
+
+# API image; deploy client/dist separately as documented.
+client
+coverage
+.npm-cache
+.mongodb-binaries

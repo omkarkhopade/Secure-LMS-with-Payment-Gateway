@@ -7,3 +7,13 @@ test-uploads/
 *.log
 .DS_Store
 REVIEW.md
+
+# Frontend builds and local tooling
+client/dist/
+client/playwright-report/
+client/test-results/
+coverage/
+.npm-cache/
+.mongodb-binaries/
+*.pem
+*.key
