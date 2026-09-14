@@ -2,7 +2,9 @@
 
 This repository contains the Express/Mongoose API and the React frontend in `client/`. Both are tracked by the same Git repository. The sibling `server-solution` is an optional reference outside this repository and is not required to clone, run, or deploy this project.
 
+
 ## Run locally
+
 
 Use Node.js 22 or 24 and a MongoDB replica set (MongoDB Atlas also works). Transactions are required for purchases, course creation and progress updates.
 
@@ -149,4 +151,5 @@ The container runs as a non-root user and includes a readiness health check. Con
 
 The built-in rate limiter is per process. This configuration targets a single API instance. Before running multiple instances, configure a shared rate-limit store or enforce global limits at the gateway. Collect structured server errors, monitor `/health` and webhook failures, enable database backups, and test restoration. Audit dependencies in CI and test provider sandbox payments, webhook retries, and Cloudinary playback before switching to live keys.
 
-The supplied GitHub Actions workflow runs tests on Node 22/24, audits production dependencies, and builds the container. No deployment or live-account changes were performed during this review. A Docker build and external-provider end-to-end tests still need to be run in your deployment environment.
+The supplied GitHub Actions workflow runs tests on Node 22/24, audits production dependencies, and builds the container. No deployment or 
+live-account changes were performed during this review. A Docker build and external-provider end-to-end tests still need to be run in your deployment environment.
