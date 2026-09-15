@@ -8,7 +8,9 @@ This repository contains the Express/Mongoose API and the React frontend in `cli
 
 Use Node.js 22 or 24 and a MongoDB replica set (MongoDB Atlas also works). Transactions are required for purchases, course creation and progress updates.
 
+
 ```powershell
+
 cd server-challenge
 npm.cmd run install:all
 Copy-Item env.example .env
