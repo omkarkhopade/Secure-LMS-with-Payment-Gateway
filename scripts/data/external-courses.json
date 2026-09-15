@@ -1,0 +1,73 @@
+[
+  {
+    "title": "100 Days of Machine Learning",
+    "externalProvider": "CampusX on YouTube",
+    "externalUrl": "https://www.youtube.com/watch?v=ZftI2fEz0Fw&list=PLKnIA16_Rmvbr7zKYQuBfsVkjoLcJgxHH",
+    "subtitle": "Machine learning lessons from CampusX. Follow the linked YouTube playlist.",
+    "description": "Machine learning lessons from CampusX. Follow the linked YouTube playlist.\n\nThis listing links to the original provider. Lessons, access requirements, and progress are managed on their website.",
+    "category": "Development",
+    "level": "beginner",
+    "courseType": "external",
+    "price": 0,
+    "thumbnail": "https://i.ytimg.com/vi/ZftI2fEz0Fw/hqdefault.jpg"
+  },
+  {
+    "title": "100 Days of Deep Learning",
+    "externalProvider": "CampusX on YouTube",
+    "externalUrl": "https://www.youtube.com/watch?v=2dH_qjc9mFg&list=PLKnIA16_RmvYuZauWaPlRTC54KxSNLtNn",
+    "subtitle": "Explore deep learning through the CampusX YouTube series.",
+    "description": "Explore deep learning through the CampusX YouTube series.\n\nThis listing links to the original provider. Lessons, access requirements, and progress are managed on their website.",
+    "category": "Development",
+    "level": "beginner",
+    "courseType": "external",
+    "price": 0,
+    "thumbnail": "https://i.ytimg.com/vi/2dH_qjc9mFg/hqdefault.jpg"
+  },
+  {
+    "title": "Sigma Web Development Course",
+    "externalProvider": "CodeWithHarry on YouTube",
+    "externalUrl": "https://www.youtube.com/watch?v=tVzUXW6siu0&list=PLu0W_9lII9agq5TrH9XLIKQvv0iaF2X3w",
+    "subtitle": "Start the Sigma web development playlist from CodeWithHarry.",
+    "description": "Start the Sigma web development playlist from CodeWithHarry.\n\nThis listing links to the original provider. Lessons, access requirements, and progress are managed on their website.",
+    "category": "Development",
+    "level": "beginner",
+    "courseType": "external",
+    "price": 0,
+    "thumbnail": "https://i.ytimg.com/vi/tVzUXW6siu0/hqdefault.jpg"
+  },
+  {
+    "title": "A2Z Data Structures and Algorithms",
+    "externalProvider": "take U forward on YouTube",
+    "externalUrl": "https://www.youtube.com/watch?v=0bHoB32fuj0&list=PLgUwDviBIf0oF6QL8m22w1hIDC1vJ_BHz",
+    "subtitle": "Follow the linked A2Z DSA playlist from take U forward.",
+    "description": "Follow the linked A2Z DSA playlist from take U forward.\n\nThis listing links to the original provider. Lessons, access requirements, and progress are managed on their website.",
+    "category": "Development",
+    "level": "beginner",
+    "courseType": "external",
+    "price": 0,
+    "thumbnail": "https://i.ytimg.com/vi/0bHoB32fuj0/hqdefault.jpg"
+  },
+  {
+    "title": "Flutter Full Course for Beginners with Projects",
+    "externalProvider": "WsCube Tech on YouTube",
+    "externalUrl": "https://www.youtube.com/watch?v=1bQwDO88Gyw&t=97s",
+    "subtitle": "Learn Flutter app development with the linked WsCube Tech course.",
+    "description": "Learn Flutter app development with the linked WsCube Tech course.\n\nThis listing links to the original provider. Lessons, access requirements, and progress are managed on their website.",
+    "category": "Development",
+    "level": "beginner",
+    "courseType": "external",
+    "price": 0,
+    "thumbnail": "https://i.ytimg.com/vi/1bQwDO88Gyw/hqdefault.jpg"
+  },
+  {
+    "title": "Complete Web Development Course",
+    "externalProvider": "Hitesh Choudhary on Udemy",
+    "externalUrl": "https://www.udemy.com/course/web-dev-master/",
+    "subtitle": "Explore web development with Hitesh Choudhary on Udemy. Check the provider page for access and current pricing.",
+    "description": "Explore web development with Hitesh Choudhary on Udemy. Check the provider page for access and current pricing.\n\nThis listing links to the original provider. Lessons, access requirements, and progress are managed on their website.",
+    "category": "Development",
+    "level": "beginner",
+    "courseType": "external",
+    "price": 0
+  }
+]

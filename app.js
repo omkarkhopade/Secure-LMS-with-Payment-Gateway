@@ -1,4 +1,5 @@
 import './config/env.js';
+import { sharedRateLimit } from './services/rateLimitStore.js';
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
@@ -15,16 +16,17 @@ import { handleStripeWebhook } from './controllers/coursePurchase.controller.js'
 import { handleRazorpayWebhook } from './controllers/razorpay.controller.js';
 import { AppError, errorHandler } from './middleware/error.middleware.js';
 import { validateRequest } from './middleware/request.middleware.js';
-export function createApp() {
+import { frontendMiddleware } from './middleware/frontend.middleware.js';
+export function createApp({ clientDirectory } = {}) {
   const app = express();
   app.disable('x-powered-by');
-  app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS || 0));
-  app.use(helmet());
+  app.set('trust proxy', Number(process.env.VERCEL ? 1 : (process.env.TRUST_PROXY_HOPS || 0)));
+  app.use(helmet({ contentSecurityPolicy: { directives: { upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null } } }));
   app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173', credentials: true }));
   // Webhooks must receive the original bytes, before JSON parsing and browser CSRF checks.
   app.post('/api/v1/purchase/webhook', express.raw({ type: 'application/json', limit: '256kb' }), handleStripeWebhook);
   app.post('/api/v1/razorpay/webhook', express.raw({ type: 'application/json', limit: '256kb' }), handleRazorpayWebhook);
-  app.use('/api', rateLimit({ windowMs: 15 * 60 * 1000, limit: 300, standardHeaders: 'draft-7', legacyHeaders: false }));
+  app.use('/api', rateLimit({ windowMs: 15 * 60 * 1000, limit: 300, ...sharedRateLimit('api'), standardHeaders: 'draft-7', legacyHeaders: false }));
   app.use(express.json({ limit: '32kb' }));
   app.use(express.urlencoded({ extended: false, limit: '32kb' }));
   app.use(cookieParser());
@@ -38,7 +40,7 @@ export function createApp() {
     next();
   });
   app.use(validateRequest);
-  const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: 'draft-7', legacyHeaders: false });
+  const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, ...sharedRateLimit('auth'), standardHeaders: 'draft-7', legacyHeaders: false });
   app.use(['/api/v1/user/signup', '/api/v1/user/signin'], authLimiter);
   app.use('/api/v1/user', userRoute);
   app.use('/api/v1/course', courseRoute);
@@ -47,6 +49,9 @@ export function createApp() {
   app.use('/api/v1/progress', progressRoute);
   app.use('/api/v1/razorpay', razorpayRoute);
   app.use('/health', healthRoute);
+  app.use('/api', (req, res, next) => next(new AppError('Route not found', 404)));
+  app.use('/health', (req, res, next) => next(new AppError('Route not found', 404)));
+  app.use(frontendMiddleware(clientDirectory));
   app.use((req, res, next) => next(new AppError('Route not found', 404)));
   app.use(errorHandler);
   return app;

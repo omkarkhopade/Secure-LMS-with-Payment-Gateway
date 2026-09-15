@@ -10,6 +10,7 @@ try {
   await mongoose.connect(process.env.MONGO_URI, { autoIndex: false, serverSelectionTimeoutMS: 5000 });
   // Add missing indexes only; never drop indexes or automatically delete duplicate records.
   for (const model of [User, Course, Lecture, CoursePurchase, CourseProgress]) await model.createIndexes();
+  await mongoose.connection.db.collection('ratelimits').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
   console.log('Required database indexes are ready');
 } catch (error) {
   console.error(`Index creation failed (${error.code || error.name}); inspect duplicates and connectivity before retrying`);

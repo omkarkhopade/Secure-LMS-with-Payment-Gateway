@@ -1,3 +1,4 @@
+import { validExternalCourseUrl } from '../utils/externalCourseUrl.js';
 import { body, param, query, validationResult } from 'express-validator';
 import { AppError } from './error.middleware.js';
 
@@ -111,6 +112,9 @@ export const validateProfile = validate([
 ]);
 
 export const validateCourse = (partial = false) => validate([
+  body('externalProvider').optional().isString().bail().trim().isLength({ max: 100 }),
+  body('courseType').optional().isIn(['hosted', 'external']),
+  body('externalUrl').optional().custom(validExternalCourseUrl).withMessage('Enter a complete HTTPS course link without credentials'),
   body('title').optional(partial).isString().bail().trim().isLength({ min: 1, max: 100 }),
   body('category').optional(partial).isString().bail().trim().isLength({ min: 1, max: 100 }),
   body('price').optional(partial).isFloat({ min: 0, max: 10000000 }).custom(v => Number.isSafeInteger(Math.round(Number(v) * 100)) && Math.abs(Number(v) * 100 - Math.round(Number(v) * 100)) < 0.00001).toFloat(),

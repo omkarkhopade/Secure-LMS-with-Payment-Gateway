@@ -10,7 +10,7 @@ try {
   }
   await connectDB();
   const port = Number(process.env.PORT || 8000);
-  const server = createApp().listen(port, () => console.log(`LMS API is running at http://localhost:${port}`));
+  const server = createApp().listen(port, () => console.log(`LMS website is running at http://localhost:${port}`));
   server.requestTimeout = 120_000;
   server.headersTimeout = 30_000;
   let shuttingDown = false;

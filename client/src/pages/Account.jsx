@@ -1,3 +1,4 @@
+import { imageUploadLimit, uploadSizeLabel } from '../lib/uploads';
 import { useState } from 'react';
 import { Camera, Check, LockKeyhole } from 'lucide-react';
 import { api } from '../lib/api';
@@ -15,8 +16,8 @@ export default function Account() {
     const body = new FormData(event.currentTarget);
     if (!body.get('avatar')?.size) body.delete('avatar');
     const file = body.get('avatar');
-    if (file && file.size > 5 * 1024 * 1024) {
-      setError({ profile: 'Choose an image smaller than 5 MB.' });
+    if (file && file.size > imageUploadLimit) {
+      setError({ profile: `Choose an image smaller than ${uploadSizeLabel(imageUploadLimit)}.` });
       return;
     }
     setBusy('profile');

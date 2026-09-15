@@ -8,8 +8,11 @@ test
 .DS_Store
 *.log
 
-# API image; deploy client/dist separately as documented.
-client
+# Frontend source is needed by the build stage.
+client/node_modules
+client/dist
+client/test-results
+client/playwright-report
 coverage
 .npm-cache
 .mongodb-binaries

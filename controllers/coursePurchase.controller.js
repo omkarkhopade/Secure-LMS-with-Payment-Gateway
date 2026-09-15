@@ -53,7 +53,7 @@ export const handleStripeWebhook = catchAsync(async (req, res) => {
   res.json({ received: true });
 });
 export const getCoursePurchaseStatus = catchAsync(async (req, res) => {
-  const course = await Course.findById(req.params.courseId).populate('instructor', 'name avatar bio').populate('lectures');
+  const course = await Course.findById(req.params.courseId).select('+externalUrl').populate('instructor', 'name avatar bio').populate('lectures');
   if (!course) throw new AppError('Course not found', 404);
   const purchased = await CoursePurchase.exists({ user: req.id, course: course._id, status: 'completed' });
   const data = await courseView(course, req.id, Boolean(purchased));
@@ -61,6 +61,6 @@ export const getCoursePurchaseStatus = catchAsync(async (req, res) => {
 });
 export const getPurchasedCourses = catchAsync(async (req, res) => {
   const page = Number(req.query.page || 1), limit = Number(req.query.limit || 20);
-  const purchases = await CoursePurchase.find({ user: req.id, status: 'completed' }).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).populate({ path: 'course', select: 'title thumbnail description category instructor totalLectures totalDuration level', populate: { path: 'instructor', select: 'name avatar' } });
+  const purchases = await CoursePurchase.find({ user: req.id, status: 'completed' }).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).populate({ path: 'course', select: 'title thumbnail description category instructor totalLectures totalDuration level courseType externalProvider price', populate: { path: 'instructor', select: 'name avatar' } });
   res.json({ success: true, data: purchases.map(p => p.course).filter(Boolean) });
 });

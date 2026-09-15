@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router';
+import { Link, Navigate, useParams, useSearchParams } from 'react-router';
 import { ArrowLeft, ArrowRight, Check, CheckCircle2, Circle, Play, RefreshCw } from 'lucide-react';
 import { api } from '../lib/api';
 import { duration } from '../lib/format';
@@ -61,6 +61,8 @@ export default function Player() {
     );
   const data = resource.data;
   const course = data.courseDetails;
+  if (course.courseType === 'external')
+    return <Navigate to={`/course-detail/${courseId}`} replace />;
   const lectures = course.lectures || [];
   const selected = lectures.find((l) => l._id === requested) || lectures[0];
   const index = lectures.indexOf(selected);

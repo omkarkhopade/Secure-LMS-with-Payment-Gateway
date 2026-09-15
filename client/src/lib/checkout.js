@@ -51,7 +51,8 @@ export async function checkout(provider, course, user) {
       amount: response.order.amount,
       currency: response.order.currency,
       name: 'Forma',
-      description: course.title,
+      description:
+        course.courseType === 'external' ? `Forma link access: ${course.title}` : course.title,
       prefill: { name: user.name, email: user.email },
       theme: { color: '#203e35' },
       handler: async (data) => {

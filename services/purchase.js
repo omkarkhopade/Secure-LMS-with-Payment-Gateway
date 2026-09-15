@@ -13,6 +13,8 @@ export async function preparePurchase(userId, courseId, provider) {
   if (!mongoose.isObjectIdOrHexString(courseId)) throw new AppError('Invalid course ID', 400);
   const course = await Course.findById(courseId);
   if (!course || !course.isPublished) throw new AppError('Course not found', 404);
+  if (course.courseType === 'external' && course.price <= 0) throw new AppError('External courses without an access fee can be opened on the provider website', 400);
+  if (course.courseType === 'external' && provider !== 'razorpay') throw new AppError('Use Razorpay to unlock this external course link', 400);
   if (String(course.instructor) === userId || await CoursePurchase.exists({ user: userId, course: courseId, status: 'completed' })) throw new AppError('You already have access to this course', 409);
   minorUnits(course.price);
   let purchase = await CoursePurchase.findOne({ user: userId, course: courseId, status: 'pending' });
@@ -33,7 +35,8 @@ export async function fulfillPurchase(purchaseId) {
   // All three writes commit together. Duplicate callbacks become no-ops.
   await mongoose.connection.transaction(async session => {
     const purchase = await CoursePurchase.findById(purchaseId).session(session);
-    if (!purchase) throw new AppError('Purchase not found', 404);
+    if (!purchase) 
+      throw new AppError('Purchase not found', 404);
     if (purchase.status === 'completed') return;
     if (purchase.status !== 'pending') throw new AppError('Purchase cannot be fulfilled', 409);
     const course = await Course.findById(purchase.course).session(session);

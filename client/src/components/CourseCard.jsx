@@ -32,7 +32,10 @@ export function CourseCover({ course, className = '' }) {
 export default function CourseCard({ course, enrolled = false }) {
   const { toggle, isSaved } = useSaved();
   const saved = isSaved(course._id);
-  const to = enrolled ? `/course-progress/${course._id}` : `/course-detail/${course._id}`;
+  const to =
+    enrolled && course.courseType !== 'external'
+      ? `/course-progress/${course._id}`
+      : `/course-detail/${course._id}`;
   return (
     <article className="course-card">
       <div className="card-image-wrap">
@@ -58,23 +61,49 @@ export default function CourseCard({ course, enrolled = false }) {
           </Link>
         </h3>
         <div className="teacher-line">
-          <span className="mini-avatar">{initials(course.instructor?.name)}</span>
-          <span>{course.instructor?.name || 'Forma instructor'}</span>
-        </div>
-        <div className="card-meta">
-          <span>
-            <Layers3 size={14} />
-            {course.totalLectures || course.lectures?.length || 0} lessons
+          <span className="mini-avatar">
+            {initials(
+              course.courseType === 'external'
+                ? course.externalProvider || 'External provider'
+                : course.instructor?.name,
+            )}
           </span>
           <span>
-            <Clock3 size={14} />
-            {duration(course.totalDuration)}
+            {course.courseType === 'external'
+              ? course.externalProvider || 'External provider'
+              : course.instructor?.name || 'Forma instructor'}
           </span>
         </div>
+        {course.courseType === 'external' ? (
+          <p className="card-meta">External course</p>
+        ) : (
+          <div className="card-meta">
+            <span>
+              <Layers3 size={14} />
+              {course.totalLectures || course.lectures?.length || 0} lessons
+            </span>
+            <span>
+              <Clock3 size={14} />
+              {duration(course.totalDuration)}
+            </span>
+          </div>
+        )}
         <div className="card-bottom">
-          <span>{enrolled ? 'In your library' : money(course.price)}</span>
+          <span>
+            {course.courseType === 'external'
+              ? course.price > 0
+                ? `${money(course.price)} link access`
+                : 'Price on provider site'
+              : enrolled
+                ? 'In your library'
+                : money(course.price)}
+          </span>
           <Link to={to}>
-            {enrolled ? 'Continue learning' : 'View course'}
+            {enrolled
+              ? course.courseType === 'external'
+                ? 'Open course'
+                : 'Continue learning'
+              : 'View course'}
             <ArrowUpRight size={15} />
           </Link>
         </div>

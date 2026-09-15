@@ -12,6 +12,7 @@ export async function courseView(course, userId, purchased) {
   if (!course.isPublished && !access) throw new AppError('Course not found', 404);
   const data = course.toJSON();
   delete data.enrolledStudents;
+  if (course.courseType === 'external' && course.price > 0 && !access) delete data.externalUrl;
   data.lectures = (course.lectures || []).map(lecture => {
     const item = lecture.toJSON ? lecture.toJSON() : { ...lecture };
     delete item.videoUrl; delete item.publicId;

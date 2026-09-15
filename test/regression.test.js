@@ -280,3 +280,54 @@ test('visitors can browse published details without receiving paid video URLs or
   assert.equal((await request(`/api/v1/course/c/${draft._id}`)).status, 404);
   assert.equal((await request(`/api/v1/course/c/${course._id}`, { method: 'PATCH', body: { title: 'Hacked' } })).status, 401);
 });
+
+
+test('external courses validate links, publish without uploads, and bypass Forma checkout', async () => {
+ const body={ title:'External learning resource', category:'Development', price:0, courseType:'external', externalUrl:'https://example.com/courses/react' };
+ assert.equal((await request('/api/v1/course',{method:'POST',user:buyer,body})).status,403);
+ for(const externalUrl of ['javascript:alert(1)','http://example.com/course','https://name:password@example.com/course']) {
+  assert.equal((await request('/api/v1/course',{method:'POST',user:teacher,body:{...body,externalUrl}})).status,400);
+ }
+ const created=await request('/api/v1/course',{method:'POST',user:teacher,body});
+ assert.equal(created.status,201);const id=created.body.data._id;
+ assert.equal(created.body.data.courseType,'external');assert.equal(created.body.data.isPublished,false);
+ assert.equal((await request(`/api/v1/course/c/${id}`)).status,404);
+ assert.equal((await request(`/api/v1/course/c/${id}`,{method:'PATCH',user:outsider,body:{isPublished:true}})).status,403);
+ assert.equal((await request(`/api/v1/course/c/${id}`,{method:'PATCH',user:teacher,body:{isPublished:true}})).status,200);
+ const published=await request(`/api/v1/course/c/${id}`);assert.equal(published.status,200);assert.equal(published.body.data.externalUrl,body.externalUrl);
+ assert.equal((await request(`/api/v1/course/c/${id}`,{method:'PATCH',user:teacher,body:{externalUrl:''}})).status,400);
+ assert.equal((await request(`/api/v1/course/c/${id}`,{method:'PATCH',user:teacher,body:{courseType:'hosted'}})).status,400);
+ const {preparePurchase}=await import('../services/purchase.js');
+ await assert.rejects(preparePurchase(String(buyer._id),id,'stripe'),/provider website/);
+ await assert.rejects(preparePurchase(String(buyer._id),id,'razorpay'),/provider website/);
+ assert.equal(await CoursePurchase.countDocuments({course:id}),0);
+});
+
+
+test('paid external URLs are hidden until captured Razorpay payment is verified', async () => {
+ const url='https://example.com/paid-external';
+ const made=await request('/api/v1/course',{method:'POST',user:teacher,body:{title:'Paid external',category:'test',courseType:'external',externalUrl:url,price:149}});
+ assert.equal(made.status,201);const id=made.body.data._id;
+ assert.equal(made.body.data.price,149);
+ await request(`/api/v1/course/c/${id}`,{method:'PATCH',user:teacher,body:{isPublished:true}});
+ const read=async user=>(await request(`/api/v1/course/c/${id}`,{user})).body.data;
+ assert.equal((await read()).externalUrl,undefined);assert.equal((await read(buyer)).externalUrl,undefined);assert.equal((await read(teacher)).externalUrl,url);
+ for(const path of ['/api/v1/course/search?query=Paid','/api/v1/course/published']) {
+  assert.equal(JSON.stringify((await request(path)).body).includes(url),false);
+ }
+ assert.equal((await request(`/api/v1/purchase/course/${id}/detail-with-status`,{user:buyer})).body.data.course.externalUrl,undefined);
+ assert.equal((await request(`/api/v1/progress/${id}`,{user:buyer})).status,403);
+ assert.equal((await request('/api/v1/purchase/checkout/create-checkout-session',{method:'POST',user:buyer,body:{courseId:id}})).status,400);
+ nock('https://api.razorpay.com').post('/v1/orders', body=>body.amount===14900).reply(200,{id:'order_external',amount:14900,currency:'INR'});
+ assert.equal((await request('/api/v1/razorpay/create-order',{method:'POST',user:buyer,body:{courseId:id,amount:1}})).status,200);
+ assert.equal((await read(buyer)).externalUrl,undefined);
+ const payment={razorpay_order_id:'order_external',razorpay_payment_id:'pay_external',razorpay_signature:crypto.createHmac('sha256',process.env.RAZORPAY_KEY_SECRET).update('order_external|pay_external').digest('hex')};
+ assert.equal((await request('/api/v1/razorpay/verify-payment',{method:'POST',user:buyer,body:{...payment,razorpay_signature:'0'.repeat(64)}})).status,400);
+ nock('https://api.razorpay.com').get('/v1/payments/pay_external').reply(200,{id:'pay_external',order_id:'order_external',status:'authorized',amount:14900,currency:'INR'});
+ assert.equal((await request('/api/v1/razorpay/verify-payment',{method:'POST',user:buyer,body:payment})).status,409);
+ assert.equal((await read(buyer)).externalUrl,undefined);
+ nock('https://api.razorpay.com').get('/v1/payments/pay_external').reply(200,{id:'pay_external',order_id:'order_external',status:'captured',amount:14900,currency:'INR'});
+ assert.equal((await request('/api/v1/razorpay/verify-payment',{method:'POST',user:buyer,body:payment})).status,200);
+ assert.equal((await read(buyer)).externalUrl,url);assert.equal((await read(outsider)).externalUrl,undefined);
+ const library=(await request('/api/v1/purchase',{user:buyer})).body.data.find(c=>c._id===id);assert.equal(library.courseType,'external');assert.equal(library.price,149);
+});

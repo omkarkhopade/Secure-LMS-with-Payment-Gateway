@@ -218,3 +218,107 @@ test('authenticated pages have accessible labels and contrast', async ({ page })
     ).toEqual([]);
   }
 });
+
+test('instructor publishes an external link and visitors open the provider safely', async ({
+  page,
+}) => {
+  await login(page, true, '/studio/new');
+  await page.getByLabel('Course location').selectOption('external');
+  await page
+    .getByLabel('External course link', { exact: true })
+    .fill('https://example.com/courses/react');
+  await page.getByLabel('Course title', { exact: true }).fill('React on the web');
+  await page.getByLabel('Category', { exact: true }).fill('Development');
+  await expect(page.getByLabel('Course price (INR)')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Create draft course' }).click();
+  await expect(page.locator('.status-label')).toHaveText('Draft');
+  await expect(page.getByRole('button', { name: 'Add lesson', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Publish course', exact: true }).click();
+  await expect(page.locator('.status-label')).toHaveText('Published');
+  await page.getByRole('link', { name: 'View course page' }).click();
+  const link = page.getByRole('link', { name: 'Open course website' });
+  await expect(link).toHaveAttribute('href', 'https://example.com/courses/react');
+  await expect(link).toHaveAttribute('target', '_blank');
+  await expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  await expect(page.getByRole('button', { name: 'Enroll in this course' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  await page.goto('/courses');
+  const card = page.locator('.course-card').filter({ hasText: 'React on the web' });
+  await expect(card).toContainText('External course');
+  await expect(card).toContainText('Price on provider site');
+  await card.getByRole('link', { name: 'View course' }).click();
+  await expect(link).toBeVisible();
+});
+
+test('external access fee requires payment and unlocks the link after verification', async ({
+  page,
+}) => {
+  await login(page, true, '/studio/new');
+  await page.getByLabel('Course location').selectOption('external');
+  await page
+    .getByLabel('External course link', { exact: true })
+    .fill('https://example.com/paid-course');
+  await page.getByLabel('Course title', { exact: true }).fill('Paid external listing');
+  await page.getByLabel('Category', { exact: true }).fill('Development');
+  await page.getByLabel('Forma link access price (INR)').fill('149');
+  await page.getByRole('button', { name: 'Create draft course' }).click();
+  await expect(page.locator('.status-label')).toHaveText('Draft');
+  const courseId = page.url().split('/').pop();
+  await page.getByRole('button', { name: 'Publish course', exact: true }).click();
+  await expect(page.locator('.status-label')).toHaveText('Published');
+  await page.getByRole('link', { name: 'View course page' }).click();
+  await expect(page.getByText(/Instructor preview/)).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Open course website' })).toBeVisible();
+  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  await page.goto(`/course-detail/${courseId}`);
+  await expect(page.getByRole('button', { name: 'Sign in to pay' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Open course website' })).toHaveCount(0);
+  await login(page, false, `/course-detail/${courseId}`);
+  const pay = page.getByRole('button', { name: 'Pay with Razorpay' });
+  await expect(pay).toBeDisabled();
+  await page.getByRole('checkbox').check();
+  await page.evaluate(() => {
+    window.Razorpay = class {
+      constructor(options) {
+        this.options = options;
+      }
+      on() {}
+      close() {}
+      open() {
+        this.options.modal.ondismiss();
+      }
+    };
+  });
+  await pay.click();
+  await expect(page.getByRole('alert')).toContainText('Checkout closed');
+  await expect(page.getByRole('link', { name: 'Open course website' })).toHaveCount(0);
+  await page.evaluate(() => {
+    window.Razorpay = class {
+      constructor(options) {
+        this.options = options;
+      }
+      on() {}
+      close() {}
+      open() {
+        this.options.handler({
+          razorpay_order_id: 'order_fixture',
+          razorpay_payment_id: 'pay_fixture',
+          razorpay_signature: 'fixture',
+        });
+      }
+    };
+  });
+  await pay.click();
+  await expect(page.getByRole('link', { name: 'Open course website' })).toHaveAttribute(
+    'href',
+    'https://example.com/paid-course',
+  );
+  await expect(page).toHaveURL(new RegExp(`/course-detail/${courseId}$`));
+  await page.goto('/learning');
+  await page
+    .locator('.course-card')
+    .filter({ hasText: 'Paid external listing' })
+    .getByRole('link', { name: 'Open course', exact: true })
+    .click();
+  await expect(page.getByRole('link', { name: 'Open course website' })).toBeVisible();
+});

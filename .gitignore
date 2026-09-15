@@ -17,3 +17,5 @@ coverage/
 .mongodb-binaries/
 *.pem
 *.key
+
+.vercel/

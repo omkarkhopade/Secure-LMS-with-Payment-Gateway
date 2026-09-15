@@ -63,6 +63,7 @@ const seeds = [
   ],
 ];
 let courses, users, purchases, progress;
+const orders = new Map();
 function reset() {
   courses = seeds.map(([title, category, price, level, subtitle], i) => ({
     _id: courseId(i + 1),
@@ -100,6 +101,7 @@ function reset() {
     ['instructor', new Set()],
   ]);
   progress = new Map();
+  orders.clear();
 }
 reset();
 const respond = (res, status, data, headers = {}) => {
@@ -116,6 +118,17 @@ const server = http.createServer(async (req, res) => {
     }
     const token = /fixture=([^;]+)/.exec(req.headers.cookie || '')?.[1];
     const user = users.get(token);
+    const courseView = (course) => {
+      const data = { ...course };
+      if (
+        data.courseType === 'external' &&
+        data.price > 0 &&
+        user?._id !== data.instructor?._id &&
+        !purchases.get(token)?.has(data._id)
+      )
+        delete data.externalUrl;
+      return data;
+    };
     let body = {};
     if (!['GET', 'HEAD'].includes(req.method)) {
       const chunks = [];
@@ -175,7 +188,7 @@ const server = http.createServer(async (req, res) => {
         limit = Number(url.searchParams.get('limit') || 20);
       const total = list.length;
       return respond(res, 200, {
-        data: list.slice((page - 1) * limit, page * limit),
+        data: list.slice((page - 1) * limit, page * limit).map(courseView),
         count: total,
         pagination: { page, limit, total, pages: Math.ceil(total / limit) },
       });
@@ -203,7 +216,7 @@ const server = http.createServer(async (req, res) => {
         Object.assign(course, body);
         if ('price' in body) course.price = Number(body.price);
       }
-      return respond(res, 200, { data: course });
+      return respond(res, 200, { data: courseView(course) });
     }
     const lectureMatch = /^\/course\/c\/([a-z0-9]+)\/lectures$/.exec(path);
     if (lectureMatch) {
@@ -227,19 +240,21 @@ const server = http.createServer(async (req, res) => {
     if (statusMatch)
       return respond(res, 200, {
         data: {
-          course: courses.find((c) => c._id === statusMatch[1]),
+          course: courseView(courses.find((c) => c._id === statusMatch[1])),
           isPurchased: purchases.get(token)?.has(statusMatch[1]),
         },
       });
     if (path === '/purchase/checkout/create-checkout-session')
       return respond(res, 503, { message: 'Stripe payments are not configured' });
-    if (path === '/razorpay/create-order')
+    if (path === '/razorpay/create-order') {
+      orders.set(token, body.courseId);
       return respond(res, 200, {
         keyId: 'rzp_test_fixture',
         order: { id: 'order_fixture', amount: 149900, currency: 'INR' },
       });
+    }
     if (path === '/razorpay/verify-payment') {
-      purchases.get(token).add(courseId(2));
+      purchases.get(token).add(orders.get(token) || courseId(2));
       return respond(res, 200, { success: true });
     }
     const match = /^\/progress\/([a-z0-9]+)(?:\/lectures\/([a-z0-9]+))?$/.exec(path);

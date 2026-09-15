@@ -30,6 +30,8 @@ export function SavedProvider({ children }) {
           {
             _id: course._id,
             title: course.title,
+            courseType: course.courseType,
+            externalProvider: course.externalProvider,
             thumbnail: course.thumbnail,
             category: course.category,
             level: course.level,

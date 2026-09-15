@@ -12,21 +12,23 @@ import { AppError } from "../middleware/error.middleware.js";
  * @route POST /api/v1/courses
  */
 export const createNewCourse = catchAsync(async (req, res) => {
-  const { title, subtitle, description, category, level, price, isPublished } = req.body;
+  const { title, subtitle, description, category, level, price, isPublished, courseType, externalUrl, externalProvider } = req.body;
 
+  if (courseType === 'external' && !externalUrl) throw new AppError('External course URL is required', 400);
+  if (courseType !== 'external' && externalUrl) throw new AppError('External links require an external course', 400);
   // Handle thumbnail upload
   let thumbnail, thumbnailPublicId;
   if (req.file) {
     const result = await uploadMedia(req.file.path);
     thumbnail = result.secure_url;
     thumbnailPublicId = result.public_id;
-  } else{
+  } else if (courseType !== "external") {
     throw new AppError("Course thumbnail is required", 400);
   }
 
   let course;
   await mongoose.connection.transaction(async session => {
-    [course] = await Course.create([{ title, subtitle, description, category, level, price, thumbnail, thumbnailPublicId, instructor: req.id }], { session });
+    [course] = await Course.create([{ title, subtitle, description, category, level, price, courseType, externalUrl, externalProvider, thumbnail, thumbnailPublicId, instructor: req.id }], { session });
     await User.updateOne({ _id: req.id }, { $addToSet: { createdCourses: course._id } }, { session });
   });
 
@@ -164,7 +166,7 @@ export const getMyCreatedCourses = catchAsync(async (req, res) => {
  */
 export const updateCourseDetails = catchAsync(async (req, res) => {
   const { courseId } = req.params;
-  const { title, subtitle, description, category, level, price, isPublished } = req.body;
+  const { title, subtitle, description, category, level, price, isPublished, courseType, externalUrl, externalProvider } = req.body;
 
   const course = await Course.findById(courseId);
   if (!course) {
@@ -176,6 +178,8 @@ export const updateCourseDetails = catchAsync(async (req, res) => {
     throw new AppError("Not authorized to update this course", 403);
   }
 
+  if (courseType && courseType !== (course.courseType || 'hosted')) throw new AppError('Course type cannot be changed after creation', 400);
+  if (externalUrl !== undefined && course.courseType !== 'external') throw new AppError('Hosted courses cannot have external links', 400);
   // Handle thumbnail upload
   let thumbnail, thumbnailPublicId;
   if (req.file) {
@@ -193,6 +197,8 @@ export const updateCourseDetails = catchAsync(async (req, res) => {
       category,
       level,
       price,
+      ...(externalUrl !== undefined && { externalUrl }),
+      ...(externalProvider !== undefined && { externalProvider }),
       ...(isPublished !== undefined && { isPublished }),
       ...(thumbnail && { thumbnail, thumbnailPublicId }),
     },
@@ -213,7 +219,7 @@ export const updateCourseDetails = catchAsync(async (req, res) => {
  * @route GET /api/v1/courses/:courseId
  */
 export const getCourseDetails = catchAsync(async (req, res) => {
-  const course = await Course.findById(req.params.courseId)
+  const course = await Course.findById(req.params.courseId).select('+externalUrl')
     .populate({
       path: "instructor",
       select: "name avatar bio",
@@ -250,6 +256,7 @@ export const addLectureToCourse = catchAsync(async (req, res) => {
     throw new AppError("Not authorized to update this course", 403);
   }
 
+  if (course.courseType === 'external') throw new AppError('External courses are hosted by their provider and cannot receive uploaded lessons', 400);
   // Handle video upload
   if (!req.file) {
     throw new AppError("Video file is required", 400);

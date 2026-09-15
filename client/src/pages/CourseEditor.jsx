@@ -1,3 +1,4 @@
+import { imageUploadLimit, videoUploadLimit, uploadSizeLabel } from '../lib/uploads';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { ArrowLeft, Check, Eye, ImagePlus, Plus, Upload, Video } from 'lucide-react';
@@ -20,6 +21,7 @@ export default function CourseEditor() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
+  const [newType, setNewType] = useState('hosted');
   const [busy, setBusy] = useState('');
   const [error, setError] = useState({});
   const resource = useResource(
@@ -42,6 +44,7 @@ export default function CourseEditor() {
       </div>
     );
   const course = resource.data;
+  const external = (course?.courseType || newType) === 'external';
   if (course && (course.instructor?._id || course.instructor) !== user._id)
     return (
       <div className="page">
@@ -56,9 +59,10 @@ export default function CourseEditor() {
   async function save(event) {
     event.preventDefault();
     const body = new FormData(event.currentTarget);
+    if (!courseId) body.set('courseType', newType);
     const file = body.get('thumbnail');
-    if (file?.size > 5 * 1024 * 1024) {
-      setError({ details: 'Choose a thumbnail smaller than 5 MB.' });
+    if (file?.size > imageUploadLimit) {
+      setError({ details: `Choose a thumbnail smaller than ${uploadSizeLabel(imageUploadLimit)}.` });
       return;
     }
     if (!file?.size) body.delete('thumbnail');
@@ -69,7 +73,13 @@ export default function CourseEditor() {
         method: courseId ? 'PATCH' : 'POST',
         body,
       });
-      toast(courseId ? 'Course details saved' : 'Your draft is ready. Add your first lesson.');
+      toast(
+        courseId
+          ? 'Course details saved'
+          : external
+            ? 'Your link is saved. Publish it when ready.'
+            : 'Your draft is ready. Add your first lesson.',
+      );
       if (!courseId) navigate(`/studio/${result.data._id}`, { replace: true });
       else resource.reload();
     } catch (error) {
@@ -82,8 +92,8 @@ export default function CourseEditor() {
     event.preventDefault();
     const form = event.currentTarget;
     const body = new FormData(form);
-    if (body.get('video')?.size > 50 * 1024 * 1024) {
-      setError({ lesson: 'Choose a video smaller than 50 MB.' });
+    if (body.get('video')?.size > videoUploadLimit) {
+      setError({ lesson: `Choose a video smaller than ${uploadSizeLabel(videoUploadLimit)}.` });
       return;
     }
     body.set('isPreview', body.has('isPreview') ? 'true' : 'false');
@@ -146,6 +156,48 @@ export default function CourseEditor() {
             </div>
             <form key={course?._id || 'new'} onSubmit={save}>
               <FormError error={error.details} />
+              {!courseId && (
+                <Field id="course-type" label="Course location">
+                  <select
+                    id="course-type"
+                    value={newType}
+                    onChange={(event) => setNewType(event.target.value)}
+                  >
+                    <option value="hosted">Upload lessons to Forma</option>
+                    <option value="external">Link to an external course</option>
+                  </select>
+                </Field>
+              )}
+              {external && (
+                <Field
+                  id="external-url"
+                  label="External course link"
+                  hint="Use the full https:// course URL. A positive Forma access price requires verified Razorpay payment before revealing this link."
+                >
+                  <input
+                    id="external-url"
+                    name="externalUrl"
+                    type="url"
+                    required
+                    maxLength={2048}
+                    pattern="https://.*"
+                    defaultValue={course?.externalUrl || ''}
+                    placeholder="https://provider.com/course/your-course"
+                  />
+                </Field>
+              )}
+
+              {external && (
+                <Field id="external-provider" label="Provider or creator (optional)">
+                  <input
+                    id="external-provider"
+                    name="externalProvider"
+                    maxLength={100}
+                    defaultValue={course?.externalProvider || ''}
+                    placeholder="e.g. CampusX on YouTube"
+                  />
+                </Field>
+              )}
               <Field id="course-title" label="Course title">
                 <input
                   id="course-title"
@@ -203,22 +255,30 @@ export default function CourseEditor() {
                   maxLength={10000}
                 />
               </Field>
-              <Field id="price" label="Course price (INR)">
+              <Field
+                id="price"
+                label={external ? 'Forma link access price (INR)' : 'Course price (INR)'}
+                hint={
+                  external
+                    ? 'Set 0 for a free link. A positive price is a Forma link-access fee, not payment for the provider course. Provider charges may apply separately.'
+                    : undefined
+                }
+              >
                 <input
                   id="price"
                   name="price"
                   type="number"
-                  min="1"
+                  min={external ? '0' : '1'}
                   max="10000000"
                   step="0.01"
-                  defaultValue={course?.price || ''}
+                  defaultValue={course?.price ?? (external ? 0 : '')}
                   required
                   placeholder="e.g. 1499"
                 />
               </Field>
               <Field
                 id="thumbnail"
-                label={course ? 'Replace course thumbnail (optional)' : 'Course thumbnail'}
+                label={course || external ? 'Course thumbnail (optional)' : 'Course thumbnail'}
                 hint="JPG, PNG or WebP, up to 5 MB. A landscape image works best."
               >
                 <div className="file-input-wrap">
@@ -227,7 +287,7 @@ export default function CourseEditor() {
                     id="thumbnail"
                     name="thumbnail"
                     type="file"
-                    required={!courseId}
+                    required={!courseId && !external}
                     accept="image/jpeg,image/png,image/webp"
                   />
                 </div>
@@ -238,7 +298,7 @@ export default function CourseEditor() {
               </Button>
             </form>
           </section>
-          {course && (
+          {course && !external && (
             <section className="panel">
               <div className="panel-heading">
                 <h2>02. Bring it to life</h2>
@@ -277,7 +337,7 @@ export default function CourseEditor() {
                 <Field
                   id="video"
                   label="Lesson video"
-                  hint="MP4, WebM or MOV, up to 50 MB. Keep this page open while the video uploads."
+                  hint={`MP4, WebM or MOV, up to ${uploadSizeLabel(videoUploadLimit)}. Keep this page open while the video uploads.`}
                 >
                   <div className="file-input-wrap">
                     <Upload size={22} />
@@ -327,15 +387,19 @@ export default function CourseEditor() {
               <hr />
               <h3>Ready for your students?</h3>
               <p>
-                {course.isPublished
-                  ? 'Your course is visible in the library. Returning it to draft hides it from new students; existing learners keep access.'
-                  : 'Add at least one lesson before publishing your course to the library.'}
+                {external
+                  ? 'A positive Forma access price requires Razorpay payment before students receive the link. You can preview your own listing without paying. Progress stays on the provider website.'
+                  : course.isPublished
+                    ? 'Your course is visible in the library. Returning it to draft hides it from new students; existing learners keep access.'
+                    : 'Add at least one lesson before publishing your course to the library.'}
               </p>
               <FormError error={error.publish} />
               <Button
                 className="full"
                 busy={busy === 'publish'}
-                disabled={Boolean(busy) || (!course.isPublished && !course.lectures.length)}
+                disabled={
+                  Boolean(busy) || (!external && !course.isPublished && !course.lectures.length)
+                }
                 onClick={publish}
               >
                 <Eye size={17} />

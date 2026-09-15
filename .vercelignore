@@ -1,0 +1,11 @@
+.env
+.env.*
+client/.env
+client/.env.*
+uploads/
+test/
+client/tests/
+client/test-results/
+client/playwright-report/
+client/docs/
+.git/

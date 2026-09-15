@@ -1,6 +1,10 @@
+import { validExternalCourseUrl } from '../utils/externalCourseUrl.js';
 import mongoose from "mongoose"
 
 const courseSchema = new mongoose.Schema({
+    courseType: { type: String, enum: ['hosted', 'external'], default: 'hosted', immutable: true },
+    externalProvider: { type: String, trim: true, maxLength: 100 },
+    externalUrl: { type: String, select: false, validate: { validator: v => !v || validExternalCourseUrl(v), message: 'Enter a valid HTTPS course URL' }, required: function() { return this.courseType === 'external'; } },
     title:{
         type:String,
         required:[true, 'Course title is required'],
@@ -38,7 +42,7 @@ const courseSchema = new mongoose.Schema({
     },
     thumbnail:{
         type:String,
-        required:[true, 'Course thumbnail is required']
+        required:[function() { return this.courseType !== 'external'; }, 'Course thumbnail is required']
     },
     thumbnailPublicId: String,
     enrolledStudents:[

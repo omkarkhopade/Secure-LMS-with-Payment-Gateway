@@ -2,26 +2,19 @@
 
 A responsive learning platform connected to the existing LMS API. The client contains discovery, searchable courses, public course details, sign-in and registration, saved courses, purchased learning library, lesson player and progress, profile settings, and an instructor studio for drafts, video uploads, and publishing.
 
-## Run locally
+## Run the whole website
 
-Use Node 22.12+ (Node 24 recommended). The repository root is `server-challenge`. From its parent directory, start the backend in one terminal:
+Use Node 22.12+ (Node 24 recommended). From the repository root (`server-challenge`):
 
 ```powershell
-cd server-challenge
 npm run dev
 ```
 
-Start the frontend in another terminal:
+Open **http://localhost:8000**. The command builds this React app and starts Express to serve it alongside the API. Set the backend `CLIENT_URL=http://localhost:8000`. No second terminal or frontend server is required. Restart `npm run dev` after frontend source edits to rebuild; backend edits restart automatically.
 
-```powershell
-cd server-challenge/client
-npm ci
-npm run dev
-```
+For a fresh clone, run `npm run install:all` in the repository root first and configure the backend `.env` from `env.example`.
 
-Open **http://localhost:5175**. Port 8000 is the backend API. Dependencies are already installed in this workspace.
-
-The default Vite proxy forwards `/api` to `http://127.0.0.1:8000`. Set the backend `CLIENT_URL=http://localhost:5175`. Use that exact browser origin because the backend checks origins on state-changing requests.
+Optional frontend-only development still uses `npm run dev:client` from the repository root (Vite on 5175), alongside `npm run dev:api`. Set `CLIENT_URL=http://localhost:5175` only for that optional setup.
 
 A client `.env` is optional for the default setup. Copy `.env.example` if changing configuration:
 
@@ -61,6 +54,12 @@ A fresh database displays an honest empty library. Register a student account, t
 
 Saved courses are local to this browser and account, not synchronized between devices. There is no email/password-reset service, refund dashboard, or certificate generator in this implementation. Payment options require their server configuration; unavailable providers produce an actionable error.
 
+## External course payments
+
+In the instructor editor, external listings have a **Forma link access price (INR)**. Zero leaves the link free; a positive amount uses Razorpay checkout. The backend hides paid URLs until verified purchase, while the instructor owner retains preview access. Public catalog responses omit external URLs. After payment the details page refreshes and displays the link; purchased external listings also appear in My learning.
+
+The checkout explicitly states that this fee unlocks a link in Forma, not the provider course. Any Udemy or other provider charges remain separate. This does not prevent visiting or sharing the third-party URL outside Forma. Existing course prices are not automatically changed.
+
 ## Verification
 
 ```powershell
@@ -77,7 +76,7 @@ To inspect the populated design without changing your database, run `npm run dev
 
 ## Production hosting
 
-Run `npm ci` and `npm run build`. Deploy **dist/** to a static host with an SPA fallback to `index.html`. Proxy `/api/` to the running Express backend before the SPA fallback; never serve `index.html` for missing API routes. Prefer frontend and API on the same HTTPS origin for cookie sessions. Configure the backend `CLIENT_URL` to that public origin and `TRUST_PROXY_HOPS` for the exact deployment topology. The Vite development proxy is not part of the production build.
+From the repository root run `npm run install:all`, `npm run build`, then `npm start`. Express serves `client/dist` and the API on the same port, including the SPA fallback for page refreshes. The root Dockerfile also builds and serves both in one container. Configure HTTPS at your host/reverse proxy, backend `CLIENT_URL` to that public origin, and `TRUST_PROXY_HOPS` for the exact deployment topology. The optional Vite development proxy is not used in this setup.
 
 Serve hashed `/assets/` files with a long immutable cache, and `index.html` with revalidation. Configure TLS, provider webhooks, MongoDB transactions/indexes, backups, and media credentials using the backend deployment guide. Verify provider test payments, webhook retries, and real signed-video playback before enabling live payments. `npm run preview` is a local build preview, not a production web server.
 
@@ -96,3 +95,7 @@ Visual references below use isolated sample courses, not production database con
 - [Sign-in](docs/screenshots/signin.png)
 - [Course details](docs/screenshots/course.png)
 - [Classroom](docs/screenshots/classroom.png)
+
+## Vercel
+
+Deploy the complete repository root, not this client folder. Follow [the root deployment guide](../README.md#deploy-to-vercel). The Vercel build sets a 4 MB upload limit automatically; the regular Node build retains the standard upload limits.

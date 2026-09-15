@@ -2,7 +2,17 @@ import { StartupError } from '../utils/startupError.js';
 import mongoose from 'mongoose';
 mongoose.set('strictQuery', true);
 mongoose.set('bufferCommands', false);
-export default async function connectDB() {
+let connecting;
+export default function connectDB() {
+  if (connecting) return connecting;
+  connecting = initialize().catch(async error => {
+    connecting = undefined;
+    await mongoose.disconnect();
+    throw error;
+  });
+  return connecting;
+}
+async function initialize() {
   await mongoose.connect(process.env.MONGO_URI, {
     maxPoolSize: 10, serverSelectionTimeoutMS: 5000, socketTimeoutMS: 45000,
     autoIndex: process.env.NODE_ENV !== 'production',
@@ -14,6 +24,10 @@ export default async function connectDB() {
       const indexes = await mongoose.connection.db.collection(collection).listIndexes().toArray();
       if (!indexes.some(index => index.name === name && index.unique)) throw new StartupError('Required database indexes are missing; run npm run db:indexes');
     }
+  }
+  if (process.env.NODE_ENV === 'production') {
+    const indexes = await mongoose.connection.db.collection('ratelimits').listIndexes().toArray();
+    if (!indexes.some(index => index.name === 'expiresAt_1' && index.expireAfterSeconds === 0)) throw new StartupError('Rate-limit index missing; run npm run db:indexes');
   }
   return mongoose.connection;
 }

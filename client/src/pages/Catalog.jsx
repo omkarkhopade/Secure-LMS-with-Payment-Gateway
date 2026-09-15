@@ -1,10 +1,12 @@
-import { useSearchParams } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 import { api } from '../lib/api';
 import { useResource } from '../hooks/useResource';
 import CourseCard from '../components/CourseCard';
 import { EmptyState, ErrorState, Loading, PageHeading, Pagination } from '../components/UI';
 export default function Catalog() {
+  const { user } = useAuth();
   const [params, setParams] = useSearchParams();
   const page = Math.max(1, Number(params.get('page')) || 1);
   const query = params.get('query') || '';
@@ -31,7 +33,13 @@ export default function Catalog() {
         eyebrow="THE COURSE LIBRARY"
         title="A world of possibility."
         description="Find the right course for where you are—and where you want to go."
-      />
+      >
+        {user?.role === 'instructor' && (
+          <Link className="button" to="/studio/new">
+            Add a course
+          </Link>
+        )}
+      </PageHeading>
       <form
         className="catalog-search"
         role="search"
