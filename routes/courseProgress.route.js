@@ -3,10 +3,12 @@ import { AppError } from "../middleware/error.middleware.js";
 import express from "express"
 import { isAuthenticated } from "../middleware/auth.middleware.js";
 import {
+
     getUserCourseProgress,
     updateLectureProgress,
     markCourseAsCompleted,
     resetCourseProgress
+    
 } from "../controllers/courseProgress.controller.js";
 
 const router = express.Router();
