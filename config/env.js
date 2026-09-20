@@ -7,7 +7,7 @@ export function validateEnv(env = process.env) {
   if (env.JWT_SECRET.length < 32 || /your_jwt|change.?me/i.test(env.JWT_SECRET)) throw new StartupError('JWT_SECRET must be random and at least 32 characters');
   let client;
   try { client = new URL(env.CLIENT_URL); }
-  catch { throw new StartupError('CLIENT_URL must be a valid HTTP(S) origin, for example http://localhost:5173'); }
+  catch { throw new StartupError('CLIENT_URL must be a valid HTTP(S) origin, for example http://localhost:8000'); }
   if (!['http:', 'https:'].includes(client.protocol) || client.origin !== env.CLIENT_URL) throw new StartupError('CLIENT_URL must be an HTTP(S) origin without a trailing slash');
   if (env.NODE_ENV === 'production' && client.protocol !== 'https:') throw new StartupError('Production CLIENT_URL must use HTTPS');
   for (const key of ['PORT', 'TRUST_PROXY_HOPS', 'MAX_FILE_SIZE']) {

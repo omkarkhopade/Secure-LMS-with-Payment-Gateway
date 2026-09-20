@@ -5,12 +5,30 @@
   "buildCommand": "npm run build:vercel",
   "outputDirectory": "client/dist",
   "functions": {
-    "api/index.js": { "maxDuration": 60, "includeFiles": "client/dist/**" }
+    "api/index.js": {
+      "maxDuration": 60,
+      "includeFiles": "client/dist/**"
+    }
   },
   "routes": [
-    { "src": "/api(?:/.*)?", "dest": "/api/index.js" },
-    { "src": "/health(?:/.*)?", "dest": "/api/index.js" },
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/api/index.js" }
+    {
+      "src": "/api(?:/.*)?",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/health(?:/.*)?",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/(?:index\\.html)?",
+      "dest": "/api/index.js"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/api/index.js"
+    }
   ]
 }

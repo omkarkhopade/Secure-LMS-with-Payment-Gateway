@@ -40,6 +40,8 @@ docker run --env-file .env -p 8000:8000 --init lms-api
 
 The container runs as a non-root user and includes a readiness health check. Configure TLS at your reverse proxy and set `TRUST_PROXY_HOPS` to the exact trusted topology; never trust arbitrary forwarded IPs. Limit request sizes/timeouts at the edge too. `SIGTERM` drains HTTP connections before closing MongoDB.
 
-The built-in rate limiter is per process. This configuration targets a single API instance. Before running multiple instances, configure a shared rate-limit store or enforce global limits at the gateway. Collect structured server errors, monitor `/health` and webhook failures, enable database backups, and test restoration. Audit dependencies in CI and test provider sandbox payments, webhook retries, and Cloudinary playback before switching to live keys.
+Production rate limits use atomic MongoDB counters shared by all instances. Run `npm run db:indexes` to create the `ratelimits.expiresAt` TTL index before deploying. Development uses an in-memory limiter. Vercel trusts its own proxy automatically; other hosts use the configured `TRUST_PROXY_HOPS`. Collect structured server errors, monitor `/health` and webhook failures, enable database backups, and test restoration. Audit dependencies in CI and test provider sandbox payments, webhook retries, and Cloudinary playback before switching to live keys.
 
 The supplied GitHub Actions workflow runs tests on Node 22/24, audits production dependencies, and builds the container. Verify the Docker build, provider sandbox payments, webhook retries, and real media playback in your deployment environment before going live.
+
+For the single-domain Vercel deployment, follow [the root deployment guide](../README.md#deploy-to-vercel). Its file upload limit is 4 MB; the Node/Docker deployment retains the configured limit.

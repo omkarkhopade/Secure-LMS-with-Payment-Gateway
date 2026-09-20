@@ -62,7 +62,9 @@ export default function CourseEditor() {
     if (!courseId) body.set('courseType', newType);
     const file = body.get('thumbnail');
     if (file?.size > imageUploadLimit) {
-      setError({ details: `Choose a thumbnail smaller than ${uploadSizeLabel(imageUploadLimit)}.` });
+      setError({
+        details: `Choose a thumbnail smaller than ${uploadSizeLabel(imageUploadLimit)}.`,
+      });
       return;
     }
     if (!file?.size) body.delete('thumbnail');
@@ -279,7 +281,7 @@ export default function CourseEditor() {
               <Field
                 id="thumbnail"
                 label={course || external ? 'Course thumbnail (optional)' : 'Course thumbnail'}
-                hint="JPG, PNG or WebP, up to 5 MB. A landscape image works best."
+                hint={`JPG, PNG or WebP, up to ${uploadSizeLabel(imageUploadLimit)}. A landscape image works best.`}
               >
                 <div className="file-input-wrap">
                   <ImagePlus size={22} />

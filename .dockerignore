@@ -16,3 +16,7 @@ client/playwright-report
 coverage
 .npm-cache
 .mongodb-binaries
+
+.vercel
+client/.env
+client/.env.*

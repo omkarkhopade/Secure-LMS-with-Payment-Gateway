@@ -14,6 +14,7 @@ import { ToastProvider } from './contexts/ToastContext.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import './styles.css';
 import './styles/responsive.css';
+import './styles/theme.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

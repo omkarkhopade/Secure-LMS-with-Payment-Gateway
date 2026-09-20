@@ -1,13 +1,36 @@
-# Forma LMS - frontend and backend
+# Forma LMS
 
-This repository contains the Express/Mongoose API and the React frontend in `client/`. Both are tracked by the same Git repository. The sibling `server-solution` is an optional reference outside this repository and is not required to clone, run, or deploy this project.
+Forma is a full-stack learning platform for discovering courses, purchasing access, and tracking lesson progress. Instructors manage hosted lessons or external course listings through a dedicated studio.
+
+## Features
+
+- Searchable course catalog, saved courses, student library, and instructor studio.
+- Registration and sign-in using HttpOnly cookies and role-based authorization.
+- Razorpay and Stripe checkout with server-side verification and transactional enrollment.
+- Cloudinary media delivery and learner-managed lesson completion.
+- External course links, optionally unlocked through a disclosed Forma access fee.
+- Responsive light/dark appearance with a persistent **Light / Dark / System** selector in the header.
+
+## Technology and structure
+
+| Area | Implementation |
+| --- | --- |
+| Interface | React, React Router, Vite, CSS, Lucide icons |
+| API | Node.js 24 (or 22.12+), Express 5 |
+| Data | MongoDB replica set / Atlas, Mongoose |
+| Payments and media | Razorpay, Stripe, Cloudinary |
+| Quality checks | Node test runner, Vitest, Playwright, axe, ESLint, Prettier |
+| Deployment | One Vercel project, or the included Docker/Node setup |
+
+`client/src` contains pages, components, contexts, and shared API helpers. `routes`, `controllers`, and `services` implement the API. `models` defines MongoDB records; `middleware` handles security and validation. `api/index.js` is the Vercel entry point; `index.js` starts the persistent Node server. `test` and `client/tests` contain isolated tests. No sibling project folder is required.
 
 ## Run locally
 
-Use Node.js 22 or 24 and a MongoDB replica set (MongoDB Atlas also works). Transactions are required for purchases, course creation and progress updates.
+Use Node.js 24 or Node.js 22.12+ and a MongoDB replica set (MongoDB Atlas also works). Transactions are required for purchases, course creation and progress updates.
+
+### 1. Install dependencies
 
 ```powershell
-
 cd server-challenge
 npm run install:all
 ```
@@ -19,10 +42,10 @@ If your terminal is already in that folder, skip `cd server-challenge`. The inst
 For a fresh setup, copy the environment example:
 
 ```powershell
-Copy-Item env.example .env
+Copy-Item .env.example .env
 ```
 
-On macOS/Linux, use `cp env.example .env`. Keep an existing configured `.env` rather than replacing it.
+On macOS/Linux, use `cp .env.example .env`. Keep an existing configured `.env` rather than replacing it.
 
 Edit `.env` with your own values:
 
@@ -146,7 +169,9 @@ Run these from the repository root:
 | `npm test`            | Run backend and frontend-serving regression tests      |
 | `npm run test:client` | Run frontend unit tests                                |
 | `npm run test:e2e`    | Run isolated browser tests                             |
-| `npm run check`       | Run backend tests, frontend lint/unit tests, and build |
+| `npm run check`       | Run backend tests, frontend lint/format/unit tests, and build |
+| `npm run build:vercel` | Build the frontend with Vercel upload limits |
+| `npm run test:production-ui` | Verify built UI with production API and an isolated database |
 
 Optional separate-server development with Vite hot reload is described in [client/README.md](client/README.md). It is not required for the one-command setup above.
 
@@ -155,9 +180,10 @@ Optional separate-server development with Vite hot reload is described in [clien
 ```powershell
 npm run check
 npm run test:e2e
+npm run test:production-ui
 ```
 
-Backend tests use a temporary MongoDB replica set and mocked payment calls. The first run may download a MongoDB binary. Browser tests use in-memory fixtures on ports 5174 and 18000; they do not create accounts or payments in your database. Windows browser tests use Microsoft Edge. On Linux, install Chromium first with `cd client` followed by `npx playwright install --with-deps chromium`.
+Backend tests use a temporary MongoDB replica set and mocked payment calls, including production/serverless startup checks. `npm run test:production-ui` requires a frontend build and verifies the built React application against the real production-mode API using another isolated database; all payment providers are disabled. The first run may download a MongoDB binary. Browser tests use in-memory fixtures on ports 5174 and 18000; they do not create accounts or payments in your database. Windows browser tests use Microsoft Edge. On Linux, install Chromium first with `cd client` followed by `npx playwright install --with-deps chromium`.
 
 GitHub Actions checks the backend on Node 22 and 24 and checks the frontend, browser tests, build, and dependency audits. Automated checks do not replace real provider sandbox payments and signed-video playback verification before launch.
 
@@ -337,3 +363,11 @@ The container runs as a non-root user and includes a readiness health check. Con
 The built-in rate limiter is per process. This configuration targets a single API instance. Before running multiple instances, configure a shared rate-limit store or enforce global limits at the gateway. Collect structured server errors, monitor `/health` and webhook failures, enable database backups, and test restoration. Audit dependencies in CI and test provider sandbox payments, webhook retries, and Cloudinary playback before switching to live keys.
 
 The supplied GitHub Actions workflow runs tests on Node 22/24, audits production dependencies, and builds the container. No deployment or live-account changes were performed during this review. A Docker build and external-provider end-to-end tests still need to be run in your deployment environment.
+
+## Security and operational boundaries
+
+The server validates browser origins for cookie-authenticated writes, enforces ownership and purchase access, and verifies payment signatures, captured status, amount, and currency. Secrets and raw provider errors are not returned to clients. Production rate-limit counters are shared in MongoDB. Cookie sessions expire after one day; password/role changes revoke earlier sessions.
+
+The theme preference and saved-course list are browser-local convenience data, never payment or authorization proof. A synchronous, same-origin theme script applies the preference before React without relaxing the Content Security Policy.
+
+Run provider test-mode acceptance checks on your deployed domain before enabling live payments. Never mark a purchase completed solely because the browser reports success. Back up the database and monitor webhook delivery and application errors. See [the verification report](docs/PRODUCTION_REVIEW.md) for the checked scope and remaining launch requirements.

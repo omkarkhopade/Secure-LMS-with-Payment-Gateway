@@ -3,13 +3,19 @@ import mongoose from 'mongoose';
 mongoose.set('strictQuery', true);
 mongoose.set('bufferCommands', false);
 let connecting;
+let ready;
+mongoose.connection.on('disconnected', () => { ready = undefined; });
 export default function connectDB() {
   if (connecting) return connecting;
-  connecting = initialize().catch(async error => {
-    connecting = undefined;
+  if (ready && mongoose.connection.readyState === 1) return ready;
+  connecting = initialize().then(connection => {
+    ready = Promise.resolve(connection);
+    return connection;
+  }).catch(async error => {
     await mongoose.disconnect();
+    ready = undefined;
     throw error;
-  });
+  }).finally(() => { connecting = undefined; });
   return connecting;
 }
 async function initialize() {
@@ -17,6 +23,10 @@ async function initialize() {
     maxPoolSize: 10, serverSelectionTimeoutMS: 5000, socketTimeoutMS: 45000,
     autoIndex: process.env.NODE_ENV !== 'production',
   });
+  await verifyDatabase();
+  return mongoose.connection;
+}
+export async function verifyDatabase() {
   const topology = await mongoose.connection.db.admin().command({ hello: 1 });
   if (!topology.setName && topology.msg !== 'isdbgrid') throw new StartupError('MongoDB must support transactions (replica set or Atlas)');
   if (process.env.NODE_ENV === 'production') {

@@ -26,7 +26,7 @@ const { CourseProgress } = await import('../models/courseProgress.js');
 const { fulfillPurchase, minorUnits, validSignature } = await import('../services/purchase.js');
 const { validateEnv } = await import('../config/env.js');
 const { cookieOptions } = await import('../utils/generateToken.js');
-const { default: connectDB } = await import('../database/db.js');
+const { default: connectDB, verifyDatabase } = await import('../database/db.js');
 let repl, server, base, buyer, outsider, teacher, course, lectures;
 const cookie = user => `token=${jwt.sign({ userId: String(user._id), tokenVersion: user.tokenVersion || 0 }, process.env.JWT_SECRET, { expiresIn: '1h' })}`;
 async function request(path, { method = 'GET', user, body, headers = {} } = {}) {
@@ -260,9 +260,10 @@ test('production startup verifies the required unique indexes', async () => {
   const previous = process.env.NODE_ENV;
   process.env.NODE_ENV = 'production';
   try {
-    await connectDB();
+    await mongoose.connection.db.collection('ratelimits').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+    await verifyDatabase();
     await CourseProgress.collection.dropIndex('user_1_course_1');
-    await assert.rejects(() => connectDB(), /Required database indexes/);
+    await assert.rejects(() => verifyDatabase(), /Required database indexes/);
   } finally {
     process.env.NODE_ENV = previous;
     await CourseProgress.createIndexes();
@@ -330,4 +331,30 @@ test('paid external URLs are hidden until captured Razorpay payment is verified'
  assert.equal((await request('/api/v1/razorpay/verify-payment',{method:'POST',user:buyer,body:payment})).status,200);
  assert.equal((await read(buyer)).externalUrl,url);assert.equal((await read(outsider)).externalUrl,undefined);
  const library=(await request('/api/v1/purchase',{user:buyer})).body.data.find(c=>c._id===id);assert.equal(library.courseType,'external');assert.equal(library.price,149);
+});
+
+
+test('production counters are atomic and shared across independent rate limiter instances', async () => {
+  const { MongoRateLimitStore } = await import('../services/rateLimitStore.js');
+  const a = new MongoRateLimitStore('regression');
+  const b = new MongoRateLimitStore('regression');
+  a.init({ windowMs: 900000 }); b.init({ windowMs: 900000 });
+  const results = await Promise.all(Array.from({ length: 16 }, (_, i) => (i % 2 ? a : b).increment('192.0.2.1')));
+  assert.deepEqual(results.map(r => r.totalHits).sort((x, y) => x - y), Array.from({ length: 16 }, (_, i) => i + 1));
+  assert.equal((await b.increment('192.0.2.2')).totalHits, 1);
+  const rows = await mongoose.connection.db.collection('ratelimits').find({ _id: /^regression:/ }).toArray();
+  assert.ok(rows.every(row => !row._id.includes('192.0.2.')));
+  assert.ok(results[0].resetTime > new Date());
+});
+
+test('connection reuse survives an explicit disconnect and reconnect', async () => {
+  const first = connectDB();
+  assert.equal(first, connectDB());
+  await first;
+  await mongoose.disconnect();
+  const restarted = connectDB();
+  assert.notEqual(restarted, first);
+  assert.equal(restarted, connectDB());
+  await restarted;
+  assert.equal((await request('/health')).status, 200);
 });

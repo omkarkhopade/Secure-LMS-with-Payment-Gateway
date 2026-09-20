@@ -127,7 +127,11 @@ export default function Account() {
                   placeholder="What are you curious about?"
                 />
               </Field>
-              <Field label="Profile photo" id="avatar" hint="JPG, PNG or WebP. Up to 5 MB.">
+              <Field
+                label="Profile photo"
+                id="avatar"
+                hint={`JPG, PNG or WebP. Up to ${uploadSizeLabel(imageUploadLimit)}.`}
+              >
                 <div className="file-input-wrap">
                   <Camera size={20} />
                   <input

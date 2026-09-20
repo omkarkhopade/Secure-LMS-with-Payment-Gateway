@@ -1,0 +1,303 @@
+/* Theme surfaces keep Forma's forest and lime identity in both appearances. */
+:root {
+  color-scheme: light;
+}
+.theme-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 5px 8px;
+  min-height: 38px;
+}
+.theme-control select {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  max-width: 85px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  color: #e5eddf;
+  background: #141d19;
+  --ink: #e0edcf;
+  --muted: #b5c2af;
+  --line: #3e5143;
+  --paper: #141d19;
+  --surface: #1c2821;
+  --raised: #27372b;
+  --accent: #d8eb8e;
+}
+:root[data-theme='dark']
+  :is(
+    .sidebar,
+    .topbar,
+    .course-card,
+    .skeleton-card,
+    .panel,
+    .enrollment-card,
+    .lesson-sidebar,
+    .stat-card,
+    .studio-course,
+    .curriculum-row
+  ) {
+  background: var(--surface);
+  border-color: var(--line);
+}
+:root[data-theme='dark']
+  :is(
+    .sidebar-note,
+    .header-search,
+    .empty-state,
+    .learning-banner,
+    .auth-story,
+    .editor-guide,
+    .file-input-wrap,
+    .avatar,
+    .mini-avatar,
+    .large-avatar,
+    .empty-icon,
+    .learning-banner-icon,
+    .topic-card,
+    .topic-icon
+  ) {
+  background: var(--raised);
+  color: var(--ink);
+  border-color: var(--line);
+}
+:root[data-theme='dark']
+  :is(
+    .subtle,
+    .muted,
+    .eyebrow,
+    .sidebar-caption,
+    .primary-nav > a,
+    .nav-label,
+    .sidebar-note p em,
+    .sidebar-user small,
+    .sidebar-signin small,
+    .topbar-title,
+    .header-search,
+    .welcome-line,
+    .value-strip,
+    .value-strip > span > span,
+    .topic-card p,
+    .topic-card > svg,
+    .course-category,
+    .card-content h3 a svg,
+    .teacher-line,
+    .card-meta,
+    .card-bottom > a,
+    .note-number,
+    .bottom-note em,
+    .footer,
+    .empty-state p,
+    .error-state p,
+    .loading,
+    .back-link,
+    .field > label,
+    .field > small,
+    .password-input > .icon-button,
+    .form-hint,
+    .catalog-search,
+    .category-tabs button,
+    .filter-controls,
+    .filter-controls select,
+    .pagination,
+    .learning-banner p,
+    .auth-story > p:last-child,
+    .auth-step,
+    .auth-switch,
+    .auth-footnote,
+    .detail-subtitle,
+    .detail-teacher small,
+    .detail-teacher > span:not(.avatar):not(.detail-separator),
+    .cover-footnote,
+    .detail-section > p:not(.eyebrow),
+    .lesson-number,
+    .curriculum-row small,
+    .course-benefits,
+    .course-benefits svg,
+    .secure-note,
+    .payment-options legend,
+    .lesson-sidebar-heading > span,
+    .lesson-sidebar li > button,
+    .lesson-sidebar small,
+    .sidebar-encouragement,
+    .settings-intro > p,
+    .stat-card > svg,
+    .stat-card > span,
+    .studio-course p,
+    .editor-guide p:not(.eyebrow),
+    .editor-checklist,
+    .editor-lessons > li,
+    .help-intro .panel > svg,
+    .help-intro p,
+    .faq-section details p
+  ) {
+  color: var(--muted);
+}
+:root[data-theme='dark']
+  :is(
+    .primary-nav > a.active,
+    .primary-nav > a:hover,
+    .category-tabs button.active,
+    .category-tabs button:hover,
+    .lesson-sidebar li > button.selected,
+    .lesson-sidebar li > button:hover,
+    .icon-button:hover,
+    .button.secondary:hover,
+    .round-link:hover
+  ) {
+  background: #354c35;
+  color: #e3efc5;
+  border-color: #718963;
+}
+:root[data-theme='dark']
+  :is(.nav-count, .completion-badge, .status-label.published, .lesson-sidebar-heading > span) {
+  background: #354c35;
+  color: #e3efc5;
+  border-color: #718963;
+}
+:root[data-theme='dark']
+  :is(
+    .brand-dot,
+    .tiny-spark,
+    .auth-story h1 em,
+    .auth-switch a,
+    .sidebar-encouragement em,
+    .editor-guide em,
+    .editor-lessons strong,
+    .completed-icon,
+    .text-link:hover,
+    .back-link:hover
+  ) {
+  color: var(--accent);
+}
+:root[data-theme='dark'] .button {
+  background: var(--accent);
+  color: #203e35;
+  border-color: var(--accent);
+}
+:root[data-theme='dark'] .button:hover:not(:disabled) {
+  background: #e6f4b5;
+}
+:root[data-theme='dark'] .button.secondary {
+  background: transparent;
+  color: var(--ink);
+  border-color: #718963;
+}
+:root[data-theme='dark'] .button.secondary:hover:not(:disabled) {
+  background: var(--raised);
+}
+:root[data-theme='dark']
+  :is(
+    .field input:not([type='checkbox']):not([type='radio']),
+    .field textarea,
+    .field select,
+    .catalog-search,
+    .theme-control select option
+  ) {
+  background: #18231d;
+  color: var(--ink);
+  border-color: #71816b;
+}
+:root[data-theme='dark'] :is(.catalog-search input, .header-search input) {
+  color: var(--ink);
+}
+:root[data-theme='dark'] :is(.form-error, .error-state) {
+  background: #382721;
+  color: #ffc2a8;
+  border-color: #96654d;
+}
+:root[data-theme='dark'] :is(.field > small.field-error, .error-state > svg) {
+  color: #ffc2a8;
+}
+:root[data-theme='dark'] .status-label {
+  background: #3b3421;
+  color: #ecdaaa;
+  border-color: #776840;
+}
+:root[data-theme='dark']
+  :is(
+    .card-bottom,
+    .curriculum,
+    .curriculum-row,
+    .lesson-sidebar li,
+    .faq-section details,
+    .editor-lessons > li,
+    .editor-guide hr,
+    .pill-outline,
+    .round-link,
+    .payment-options
+  ) {
+  border-color: var(--line);
+}
+:root[data-theme='dark'] .cover-footnote {
+  background: var(--raised);
+}
+:root[data-theme='dark'] .detail-separator {
+  background: var(--line);
+}
+:root[data-theme='dark'] .shimmer {
+  background: linear-gradient(90deg, #26382b 25%, #344838 50%, #26382b 75%);
+  background-size: 200% 100%;
+}
+:root[data-theme='dark'] :focus-visible {
+  outline-color: var(--accent);
+}
+:root[data-theme='dark'] :is(.checkbox-label input, .payment-options input) {
+  accent-color: var(--accent);
+}
+/* Illustrations retain their printed-paper palette, including their text. */
+:root[data-theme='dark'] :is(.hero-art, .course-cover) {
+  color: #263d34;
+}
+:root[data-theme='dark'] .art-note {
+  color: #263d34;
+}
+:root[data-theme='dark'] .auth-art > span {
+  color: var(--ink);
+}
+:root[data-theme='dark'] .hero .button.secondary {
+  color: #e3efc5;
+}
+@media (max-width: 600px) {
+  .header-actions {
+    gap: 7px;
+  }
+  .theme-control {
+    padding: 5px;
+  }
+  .theme-control > svg {
+    display: none;
+  }
+  .theme-control select {
+    max-width: 74px;
+  }
+}
+
+:root[data-theme='dark'] input::placeholder,
+:root[data-theme='dark'] textarea::placeholder {
+  color: #a7b59e;
+  opacity: 1;
+}
+:root[data-theme='dark'] .file-input-wrap input::file-selector-button {
+  background: #354c35;
+  color: #e3efc5;
+  border-color: #718963;
+}
+:root[data-theme='dark'] .round-link {
+  color: var(--ink);
+}
+:root[data-theme='dark'] hr {
+  border-color: var(--line);
+}

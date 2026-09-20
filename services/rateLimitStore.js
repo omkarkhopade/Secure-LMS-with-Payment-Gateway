@@ -21,8 +21,15 @@ export class MongoRateLimitStore {
     }
     return { totalHits: record.totalHits, resetTime };
   }
-  async decrement() {}
-  async resetKey() {}
+  key(key) {
+    return `${this.prefix}:${Math.floor(Date.now() / this.windowMs)}:${createHash('sha256').update(key).digest('hex')}`;
+  }
+  async decrement(key) {
+    await mongoose.connection.db.collection('ratelimits').updateOne({ _id: this.key(key), totalHits: { $gt: 0 } }, { $inc: { totalHits: -1 } });
+  }
+  async resetKey(key) {
+    await mongoose.connection.db.collection('ratelimits').deleteOne({ _id: this.key(key) });
+  }
 }
 export const sharedRateLimit = (prefix) => process.env.NODE_ENV === 'production'
   ? { store: new MongoRateLimitStore(prefix) } : {};

@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router';
 import Layout from './components/Layout';
-import { EmptyState, Loading } from './components/UI';
+import { EmptyState, ErrorState, Loading } from './components/UI';
 import { useAuth } from './contexts/AuthContext';
 const Discover = lazy(() => import('./pages/Discover'));
 const Catalog = lazy(() => import('./pages/Catalog'));
@@ -15,9 +15,15 @@ const Studio = lazy(() => import('./pages/Studio'));
 const CourseEditor = lazy(() => import('./pages/CourseEditor'));
 const Help = lazy(() => import('./pages/Help'));
 function Protected({ instructor = false }) {
-  const { user, loading } = useAuth();
+  const { user, loading, sessionError, reloadSession } = useAuth();
   const location = useLocation();
   if (loading) return <Loading />;
+  if (sessionError)
+    return (
+      <div className="page">
+        <ErrorState error={sessionError} retry={reloadSession} />
+      </div>
+    );
   if (!user)
     return (
       <Navigate

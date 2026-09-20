@@ -22,7 +22,7 @@ export function createApp({ clientDirectory } = {}) {
   app.disable('x-powered-by');
   app.set('trust proxy', Number(process.env.VERCEL ? 1 : (process.env.TRUST_PROXY_HOPS || 0)));
   app.use(helmet({ contentSecurityPolicy: { directives: { upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null } } }));
-  app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173', credentials: true }));
+  app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:8000', credentials: true }));
   // Webhooks must receive the original bytes, before JSON parsing and browser CSRF checks.
   app.post('/api/v1/purchase/webhook', express.raw({ type: 'application/json', limit: '256kb' }), handleStripeWebhook);
   app.post('/api/v1/razorpay/webhook', express.raw({ type: 'application/json', limit: '256kb' }), handleRazorpayWebhook);
@@ -41,7 +41,7 @@ export function createApp({ clientDirectory } = {}) {
   });
   app.use(validateRequest);
   const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, ...sharedRateLimit('auth'), standardHeaders: 'draft-7', legacyHeaders: false });
-  app.use(['/api/v1/user/signup', '/api/v1/user/signin'], authLimiter);
+  app.use(['/api/v1/user/signup', '/api/v1/user/signin', '/api/v1/user/change-password'], authLimiter);
   app.use('/api/v1/user', userRoute);
   app.use('/api/v1/course', courseRoute);
   app.use('/api/v1/media', mediaRoute);

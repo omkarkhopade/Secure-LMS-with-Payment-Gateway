@@ -6,7 +6,7 @@ import { startupErrorMessage } from '../utils/startupError.js';
 const app = createApp();
 export default async function handler(req, res) {
   // Static pages remain available even during a database outage.
-  if (/^\/(api|health)(\/|\?|$)/.test(req.url)) {
+  if (/^\/(api|health)(\/|\?|$)/i.test(req.url)) {
     try {
       validateEnv();
       await connectDB();
@@ -14,7 +14,10 @@ export default async function handler(req, res) {
       console.error(startupErrorMessage(error));
       res.setHeader('Cache-Control', 'no-store');
       res.setHeader('Retry-After', '10');
-      return res.status(503).json({ success: false, message: 'Service is temporarily unavailable. Please try again shortly.' });
+      res.statusCode = 503;
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      return res.end(JSON.stringify({ success: false, message: 'Service is temporarily unavailable. Please try again shortly.' }));
     }
   }
   return app(req, res);

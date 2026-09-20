@@ -322,3 +322,88 @@ test('external access fee requires payment and unlocks the link after verificati
     .click();
   await expect(page.getByRole('link', { name: 'Open course website' })).toBeVisible();
 });
+
+test('theme follows system, persists an override, and synchronizes across tabs', async ({
+  page,
+  context,
+}) => {
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.goto('/');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page.getByLabel('Color theme').selectOption('light');
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  const second = await context.newPage();
+  await second.goto('/courses');
+  await page.getByLabel('Color theme').selectOption('dark');
+  await expect(second.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page.getByLabel('Color theme').selectOption('system');
+  await page.emulateMedia({ colorScheme: 'light' });
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await second.close();
+});
+
+test('dark appearance covers public, student, and instructor pages without overflow or accessibility violations', async ({
+  page,
+}, testInfo) => {
+  test.setTimeout(120000);
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.emulateMedia({ colorScheme: 'dark' });
+  async function check(path, label, width = 1440) {
+    await page.setViewportSize({ width, height: 960 });
+    await page.goto(path);
+    await expect(page.locator('main .loading')).toHaveCount(0);
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+    const result = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+      .analyze();
+    expect(
+      result.violations.map((v) => ({
+        id: v.id,
+        nodes: v.nodes.map((n) => ({ target: n.target, summary: n.failureSummary })),
+      })),
+    ).toEqual([]);
+    await page.screenshot({ path: testInfo.outputPath(`${label}.png`), fullPage: true });
+  }
+  await check('/', 'dark-discovery');
+  await check('/courses', 'dark-catalog', 768);
+  await check('/signin', 'dark-signin', 390);
+  await check('/saved', 'dark-empty', 390);
+  await check('/help', 'dark-help');
+  await check(`/course-detail/${id(2)}`, 'dark-checkout');
+  await login(page);
+  await check('/learning', 'dark-learning');
+  await check('/account', 'dark-account', 390);
+  await check(`/course-progress/${id(1)}`, 'dark-classroom');
+  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  await login(page, true, '/studio');
+  await check('/studio', 'dark-studio');
+  await check('/studio/new', 'dark-editor', 768);
+  expect(errors).toEqual([]);
+});
+
+test('session service outage offers retry instead of redirecting a signed-in student', async ({
+  page,
+}) => {
+  await login(page);
+  let unavailable = true;
+  await page.route('**/api/v1/user/profile', (route) =>
+    unavailable
+      ? route.fulfill({
+          status: 503,
+          contentType: 'application/json',
+          body: JSON.stringify({ message: 'Session service temporarily unavailable' }),
+        })
+      : route.continue(),
+  );
+  await page.goto('/account');
+  await expect(page.getByRole('alert')).toContainText('Session service temporarily unavailable');
+  await expect(page).toHaveURL(/account$/);
+  unavailable = false;
+  await page.getByRole('button', { name: 'Try again' }).click();
+  await expect(page.getByLabel('Full name')).toBeVisible();
+});

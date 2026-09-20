@@ -1,3 +1,4 @@
+import ThemeControl from './ThemeControl';
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 import {
@@ -222,6 +223,7 @@ export default function Layout() {
             </button>
           </form>
           <div className="header-actions">
+            <ThemeControl />
             {user ? (
               <Link className="avatar header-avatar" to="/account" aria-label="Your account">
                 {initials(user.name)}
